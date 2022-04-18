@@ -276,7 +276,7 @@ function aspHelper(site) {
 			return aspParser(code, site, true, args);
 		},
 		// Session 处理
-		ss() { return Session(site).data; },
+		ss() { return InitSession(site).data; },
 		tojson(obj) { return JSON.stringify(obj); },
 		fromjson(str) { return JSON.parse(str); },
 		qstr(k) { return !k ? site.query : site.query[k]; },
@@ -286,8 +286,8 @@ function aspHelper(site) {
 	return helper;
 }
 
-// Session 模块
-function Session(site) {
+// 初始化 Session
+function InitSession(site) {
 	var sessKey = site.req.headers.cookie?.match(/ASPSESSIONID\=(\w+)/)?.[1];
 	if(!sessKey) {
 		sessKey = new Date().valueOf().toString(36).toUpperCase() + Math.random().toString(36).slice(2).toUpperCase();
