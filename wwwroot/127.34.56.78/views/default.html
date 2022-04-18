@@ -1,0 +1,10 @@
+<style type="text/css">
+.pad{ padding: 3mm }
+</style>
+<div class="pad">
+	<a href="?r=sub/test" target="_blank">测试路由方式一（?r=sub/test）</a>，
+	<a href="default.asp/sub/test" target="_blank">测试路由方式二（/default.asp/sub/test）</a>，
+	<a href="?r=sub/async" target="_blank">测试异步处理</a>，
+	<a href="default.asp/test" target="_blank">一个比较卡的页面</a>
+	<p>网站计数：<%= cc().pv %>，我的SessionID：<%= ss().sessId %></p>
+</div>

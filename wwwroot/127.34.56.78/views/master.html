@@ -1,0 +1,27 @@
+<!doctype html><html lang="zh"><head>
+<title><%= sys.title %></title>
+<style type="text/css">
+body{ margin: 0mm }
+.page{ height: 100vh }
+.flex{ display: flex }
+.flex-v{ flex-direction: column }
+.flex .auto{ flex: 1 }
+.header{ height: 1in; background-color: #abcdef }
+.side{ width: 2in; background-color: #cdefab; overflow: auto }
+.main{ overflow: auto }
+</style>
+</head><body vlink="#0088cc">
+<div class="page flex flex-v">
+	<div class="header">
+		<h1>网站标题</h1>
+	</div>
+	<div class="auto flex">
+		<div class="side">
+			菜单栏
+		</div>
+		<div class="main auto">
+<%= func && func() %>
+		</div>
+	</div>
+</div>
+</body></html

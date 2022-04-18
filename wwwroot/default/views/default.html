@@ -1,0 +1,9 @@
+<!doctype html><html lang="zh"><head>
+<title><%= sys.title %></title>
+</head><body text="#00ff00" bgcolor="black" link="yellow" alink="blue" vlink="red">
+你好，<%= nick %>。
+<div>您的访问次数：<%= ss().pv %>，缓存计数器：<%= counter.pv %>，全站访问计数：<%= cc().pv %>，现在时刻：<%= sys.sTime %>，我的SessionID：<%= ss().sessId %></div>
+<% for(var i = 0; i< 10; i++) { %>
+<div>For循环测试，第<%= i %>次</div><% } %>
+<a href="http://127.34.56.78:<%= port %>" target="_blank">点击这里访问另一个网站 http://127.34.56.78:<%= port %></a>
+</body></html
