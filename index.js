@@ -294,18 +294,17 @@ function Session(site) {
 		site.res.setHeader("Set-Cookie", `ASPSESSIONID=${sessKey}; path=/; SameSite=Lax`);
 	}
 	cache.Session ??= new Object;
-	cache.Session[site.host.domain] ??= new Object;
-	var session = cache.Session[site.host.domain];
+	var session = cache.Session[site.host.domain] ??= new Object;
 	var rs = session[sessKey] ??= new Object;
 	if(rs.time) { rs.time = new Date; return rs; }
 	rs.time = new Date; rs.sessKey = sessKey; rs.data = new Object;
 	rs.data.sessId = site.host.SessionSeed = -~site.host.SessionSeed;
 	// 20 分钟自动掉线
 	function autoLogout() {
-		if(!cache.Session[sessKey]) return;
+		if(!session[sessKey]) return;
 		// 离过期还有多少时间
 		var time = new Date - rs.time - 1000 * 60 * 20;
-		if(time < 0) return delete cache.Session[sessKey];
+		if(time < 0) return delete session[sessKey];
 		setTimeout(autoLogout, time);	// 重新计时
 	}
 	setTimeout(autoLogout, 1000 * 60 * 20);
