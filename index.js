@@ -38,6 +38,8 @@ http.createServer((req, res) => {
 	};
 	// 禁止访问 app_data 目录
 	if(/app_data/i.test(site.env.URL)) return site.outerr("403 Forbidden", 403);
+	// 获取目录相对位置（根目录还是请求目录）
+	site.getPath = file => path.join(file[0] == "/" ? host.root : path.join(host.root, site.env.URL), file);
 
 	// 判断是目录还是文件
 	fs.stat(path.join(site.host.root, site.env.URL), (err, stats) => {

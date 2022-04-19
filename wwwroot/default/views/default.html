@@ -6,4 +6,7 @@
 <% for(var i = 0; i< 10; i++) { %>
 <div>For循环测试，第<%= i %>次</div><% } %>
 <a href="http://127.34.56.78:<%= port %>" target="_blank">点击这里访问另一个网站 http://127.34.56.78:<%= port %></a>
+<div>数据查询：<%= tojson(rs) %></div>
+<div>分页信息：<%= tojson(pager) %></div>
+<div>查询语句：<%= sql %></div>
 </body></html
