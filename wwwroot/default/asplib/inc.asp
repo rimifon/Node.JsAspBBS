@@ -9,7 +9,7 @@ function db(dbPath) {
 // SQLite DbHelper
 function SQLiteHelper(dbPath) {
 	try { var SQLite = cache.SQLiteModule ??= require("sqlite3").verbose(); }
-	catch(e) { throw new Error("您可能需要运行一次：yarn add sqlite3"); }
+	catch(e) { throw new Error("您可能需要运行一次：npm install sqlite3"); }
 	dbPath = site.getPath(dbPath);
 	var dbo = new SQLite.Database(dbPath);
 	this.query = function(sql, args) {
