@@ -57,11 +57,11 @@ function SQLiteHelper(dbPath) {
 
 		ins.where = cond => { where = " where " + cond; return ins; };
 
-		ins.orderby = col => { orderby = " order by " + col; return ins; };
+		ins.order = ins.orderby = col => { orderby = " order by " + col; return ins; };
 
 		ins.limit = (start, count) => { limit = " limit " + start + "," + count; return ins; };
 
-		ins.groupby = col => { groupby = " group by " + col; return ins; };
+		ins.group = ins.groupby = col => { groupby = " group by " + col; return ins; };
 
 		ins.select = cols => { select = cols; return ins; };
 
