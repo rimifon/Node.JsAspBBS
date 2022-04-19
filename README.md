@@ -12,5 +12,5 @@ node .
 
 默认数据库为 SQLite，第一次使用数据库，需要先安装 sqlite3 模块：
 ``` bash
-yarn add sqlite3
+npm install sqlite3
 ```
