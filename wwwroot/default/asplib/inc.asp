@@ -1,103 +1,60 @@
-<%
-function db(dbPath) {
-	dbPath ??= sys.dbPath || "/App_Data/sqlite.db";
-	sys.db ??= new Object;
-	if(sys.db[dbPath]) return sys.db[dbPath];
-	return sys.db[dbPath] = new SQLiteHelper(dbPath);
+<!-- #include file="core.asp" --><%
+sys.debug = true;	// 默认启用调式跟踪
+
+function me() {
+	if(sys.me) return sys.me;
+	var ins = sys.me = ss(sys.ns).me ??= new Object;
+	ins.bind = function(user) { user.isLogin = true; ss(sys.ns).me = user; delete sys.me; };
+	ins.lose = function() { delete ss(sys.ns).me; delete sys.me; };
+	return ins;
 }
 
-// SQLite DbHelper
-function SQLiteHelper(dbPath) {
-	try { var SQLite = cache.SQLiteModule ??= require("sqlite3").verbose(); }
-	catch(e) { throw new Error("您可能需要运行一次：npm install sqlite3"); }
-	dbPath = site.getPath(dbPath);
-	var dbo = new SQLite.Database(dbPath);
-	this.query = function(sql, args) {
-		return new Promise((resolve, reject) => {
-			dbo.all(sql, args, (err, rows) => {
-				if (err) reject(err);
-				else resolve(rows);
-			});
-		});
-	};
-	
-	this.fetch = function(sql, args) {
-		return new Promise((resolve, reject) => {
-			dbo.get(sql, args, (err, row) => {
-				if (err) reject(err);
-				else resolve(row);
-			});
-		});
-	};
-
-	this.scalar = function(sql, args) {
-		return new Promise((resolve, reject) => {
-			dbo.get(sql, args, (err, row) => {
-				if (err) reject(err);
-				else resolve(row.value);
-			});
-		});
-	};
-
-	this.none = function(sql, args) {
-		// 执行 SQL 并返回受影响行数
-		return new Promise((resolve, reject) => {
-			dbo.run(sql, args, function(err) {
-				if (err) reject(err);
-				else resolve(this.changes);
-			});
-		});
-	};
-
-	this.table = function(tablename) {
-		var ins = new Object; this.pager = new Object;
-		var tables = [ tablename ], where = orderby = limit = groupby = "", select = "*";
-
-		ins.join = (tbl, dir = "left") => { tables.push(dir + " join " + tbl); return ins; };
-
-		ins.where = cond => { where = " where " + cond; return ins; };
-
-		ins.order = ins.orderby = col => { orderby = " order by " + col; return ins; };
-
-		ins.limit = (start, count) => { limit = " limit " + start + "," + count; return ins; };
-
-		ins.group = ins.groupby = col => { groupby = " group by " + col; return ins; };
-
-		ins.select = cols => { select = cols; return ins; };
-
-		ins.toString = () => {
-			var sql = "select " + select + " from " + tables.join(" ") + where + groupby + orderby + limit;
-			return sql;
+// 访问监控
+function dbg() {
+	return sys.dbg || new function() {
+		// 已关闭调试功能
+		if(!sys.debug) return sys.dbg = { appendLog: function() {}, trace: function() {} };
+		// 得到缓存数据
+		if(!cc().debug) cc().debug = { last: new Array, slow: new Array, logs: new Array };
+		let cache = cc().debug, logs = { rows : new Array };
+		this.appendLog = function() {
+			var today = sys.sTime.getDate();
+			// 访问计数递增
+			if(today != cache.date) {
+				cache.date = today;
+				cache.yesterday = ~~cache.today;
+				cache.today = 0;
+			}
+			cache.today = -~cache.today;
+			let route = qstr("r") || env("PATH_INFO")?.slice(1), url = env("URL"), method = env("REQUEST_METHOD"), ip = env("REMOTE_ADDR");
+			let time = sys.sTime, exec = new Date - sys.sTime;
+			// 方法，路径，路由，IP，访问时间，执行时间
+			let row = [ method, url, route, ip, time, exec ];
+			// 记录最新日志
+			cache.last.unshift(row);
+			if(cache.last.length > 100) cache.last.length = 100;
+			// 记录调试信息
+			if(logs.rows.length) {
+				// 方法，路径，路由，时间，时长
+				logs.info = [ env("REQUEST_METHOD"), env("URL"), get("r"), tojson(sys.sTime), new Date - sys.sTime ];
+				cache.logs.unshift(logs);
+			}
+			if(cache.logs.length > 100) cache.logs.length = 100;
+			// 记录慢日志
+			let minTime = cache.minTime || 0;
+			if(exec < minTime) return;
+			cache.slow.push(row);
+			cache.slow.sort(function(a, b) { return b[5] - a[5]; });
+			if(cache.slow.length > 100) cache.slow.length = 100;
+			cache.minTime = cache.slow[ cache.slow.length - 1 ][5];
 		};
-
-		ins.astable = n => {
-			tables = [ "(" + ins + ") as " + n ];
-			where = orderby = limit = groupby = "", select = "*";
-			return ins;
+		this.trace = function(...args) {
+			for(var i = 0; i < args.length; i++) {
+				var data = args[i];
+				logs.rows.push([ data instanceof Object ? tojson(data) : data, new Date - sys.sTime ]);
+			}
 		};
-
-		ins.page = async (sort, size, page, args) => {
-			var sql = ins.toString();
-			var total = await this.scalar("select count(*) as value from (" + sql + ") as t", args);
-			var pages = Math.ceil(total / size);
-			var start = (page - 1) * size;
-			this.pager = {
-				rownum: total,
-				pagenum: pages,
-				pagesize: size,
-				curpage: page,
-				args: args
-			};
-			ins.orderby = sort;
-			ins.limit = start + "," + size;
-			return ins;
-		};
-
-		ins.query = args => this.query(ins.toString(), args || this.pager?.args);
-		ins.fetch = args => this.fetch(ins.toString(), args || this.pager?.args);
-		ins.scalar = args => this.scalar(ins.toString(), args || this.pager?.args);
-
-		return ins;
-	}
+		sys.dbg = this;
+	};
 }
 %>

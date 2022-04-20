@@ -21,11 +21,14 @@ http.createServer((req, res) => {
 	// 服务端环境变量定义
 	site.env = {
 		"REMOTE_ADDR": req.connection.remoteAddress,
+		"REQUEST_METHOD": req.method,
 		"HTTP_HOST": req.headers.host,
 		"HTTP_USER_AGENT": req.headers["user-agent"],
 		"HTTP_REFERER": req.headers.referer,
 		"HTTP_X_FORWARDED_FOR": req.headers["x-forwarded-for"],
 		"HTTP_X_FORWARDED_PROTO": req.headers["x-forwarded-proto"],
+		"HTTP_ORIGIN": req.headers.origin,
+		"HTTP_AUTHORIZATION": req.headers.authorization,
 		"PATH_INFO": paths.slice(1).join(".asp"),
 		"URL": paths[1] ? paths[0] + ".asp" : paths[0]
 	};
@@ -50,7 +53,7 @@ http.createServer((req, res) => {
 	// 结束请求
 	site.send = str => {
 		site.out.push(str);
-		res.writeHead(200, { "Content-Type": "text/html; charset=UTF-8" });
+		res.writeHead(site.status ?? 200, { "Content-Type": "text/html; charset=UTF-8" });
 		res.end(site.out.join(""));
 		site.out.length = 0;
 	};
@@ -156,7 +159,6 @@ function parseMultipart(site) {
 		var [ key, value ] = item.split("\r\n\r\n");
 		var [ type, name ] = key.split("; ");
 		var [ , filename ] = type.split("=");
-		var [ , pathname ] = filename.split("=");
 		var [ , filetype ] = type.split("=");
 		var [ , filesize ] = type.split("=");
 		var [ , filepath ] = type.split("=");
@@ -182,6 +184,8 @@ function parseUrlEncoded(site) {
 function aspParser(code, site, notRun = false, args = new Object) {
 	site.sys ??= { sTime: new Date };
 	var sys = site.sys;
+	sys.domain = site.host.domain;
+	sys.ns = sys.domain + "|" + path.dirname(site.env.URL) + "|";
 	code = includeFile(code, site);
 	var reg = /<%[\s\S]+?%>/g;
 	// 纯html代码，纯asp代码，组合代码，输出缓冲
@@ -197,7 +201,7 @@ function aspParser(code, site, notRun = false, args = new Object) {
 		if(js.charAt(0) == "=") js = "arr4.push(" + js.slice(1) + ");";
 		arr3.push(js);
 	});
-	const { qstr, form, env, apidoc, cc, ss, include, tojson, fromjson } = aspHelper(site);
+	const { qstr, form, env, include } = aspHelper(site);
 	var echo = str => arr4.push(str);
 	var runAsp = async function() {
 		if("function" != typeof boot) return site.send();
@@ -206,6 +210,7 @@ function aspParser(code, site, notRun = false, args = new Object) {
 		route.shift(); try { var rs = await boot(route);
 		if(rs instanceof Object) rs = JSON.stringify(rs);
 		site.send(rs); } catch(e){ site.outerr(e.message); }
+		finally{ closeAllDb(); dbg().appendLog(); }
 	}; try {
 		if(!notRun) arr3.push("runAsp();");
 		eval(arr3.join("\r\n"));
@@ -240,35 +245,12 @@ function includeFile(code, site) {
 // ASP 辅助方法
 function aspHelper(site) {
 	var helper = {
-		apidoc(api, route, dep = 0) {
-			var ctrl = route[dep]?.toLowerCase() || "index";
-			if(!api[ctrl]) return { err: "Controller not found." };
-			if("function" == typeof api[ctrl]) return api[ctrl]();
-			return helper.apidoc(api[ctrl], route, dep + 1);
-		},
-		// 缓存处理
-		cc(k, f, t) {
-			cache.redis ??= new Object;
-			var root = cache.redis[site.host.domain] ??= new Object;
-			if(!k) return root;
-			var rs = root[k];
-			var timer = t * 1000;
-			if(rs) {
-				if(rs.time - site.sys.sTime + timer > 0) return rs.value;
-				// 数据过期了，重新获取
-				clearTimeout(rs.handler);
-			}
-			try { var value = f(); }
-			catch(err) { throw err; }
-			// 没有初始化
-			root[k] = { value, time: site.sys.sTime };
-			root[k].handler = setTimeout(() => {
-				// 定时清理缓存
-				if(!root[k]) return;
-				delete root[k];
-			}, timer);
-			return root[k].value;
-		},
+		// apidoc(api, route, dep = 0) {
+		// 	var ctrl = route[dep]?.toLowerCase() || "index";
+		// 	if(!api[ctrl]) return { err: "Controller not found." };
+		// 	if("function" == typeof api[ctrl]) return api[ctrl]();
+		// 	return helper.apidoc(api[ctrl], route, dep + 1);
+		// },
 		// include 方法
 		include(file, args) {
 			var fpath = path.dirname(path.join(site.host.root, site.env.URL));
@@ -277,10 +259,7 @@ function aspHelper(site) {
 			var code = fs.readFileSync(fname, "utf8");
 			return aspParser(code, site, true, args);
 		},
-		// Session 处理
-		ss() { return InitSession(site).data; },
-		tojson(obj) { return JSON.stringify(obj); },
-		fromjson(str) { return JSON.parse(str); },
+		redir(url) { return IIS.redir(site, url); },
 		qstr(k) { return !k ? site.query : site.query[k]; },
 		form(k) { return !k ? site.form : site.form[k]; },
 		env(k) { return !k ? site.env : site.env[k]; }
