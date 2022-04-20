@@ -1,4 +1,4 @@
-<%
+<!-- #include file="asplib/api.asp" --><%
 function boot(route) {
 	cc().pv = -~cc().pv;
 	return apidoc({
