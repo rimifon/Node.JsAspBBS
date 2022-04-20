@@ -9,3 +9,9 @@ node .
 即可，默认 3000 端口（1024以下端口需要 root 权限）
 
 支持运行多个网站，打开 index.js，编辑第四行，即可添加多个站点。
+
+默认数据库为 SQLite，第一次使用数据库，需要先安装 sqlite3 模块：
+``` bash
+npm install sqlite3
+#yarn add sqlite3   # 或者用 yarn 安装
+```
