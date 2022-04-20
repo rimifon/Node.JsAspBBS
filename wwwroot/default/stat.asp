@@ -1,4 +1,4 @@
-﻿<!-- #include file="AspLib/inc.asp" --><%
+﻿<!-- #include file="asplib/inc.asp" --><%
 function boot(route) {
 	if(route[0] == "ClearLogs") return clearLogs();
 	sys.debug = false;
