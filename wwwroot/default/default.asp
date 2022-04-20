@@ -9,7 +9,7 @@ function boot(route) {
 			var nick = "Guest";
 			var counter = cc("tempCounter", () => { return { pv: 0 }; }, 15);
 			counter.pv++;		// 有效期 15 秒的缓存计数
-			var sql = await db().table("(select 1 as userid, :nick as nick, datetime('now', 'localtime') as now) a").
+			var sql = await db().table("(select 1 as userid, @nick as nick, datetime('now', 'localtime') as now) a").
 				page("userid desc", 10, 1, [ nick ]);
 			var rs = await sql.query();
 			var pager = db().pager;

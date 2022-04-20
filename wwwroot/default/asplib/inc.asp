@@ -50,7 +50,7 @@ function SQLiteHelper(dbPath) {
 	};
 
 	this.table = function(tablename) {
-		var ins = new Object;
+		var ins = new Object; this.pager = new Object;
 		var tables = [ tablename ], where = orderby = limit = groupby = "", select = "*";
 
 		ins.join = (tbl, dir = "left") => { tables.push(dir + " join " + tbl); return ins; };
