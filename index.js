@@ -20,18 +20,12 @@ http.createServer((req, res) => {
 	var paths = pathname.split(/\.asp(?=\/)/);
 	// 服务端环境变量定义
 	site.env = {
-		"REMOTE_ADDR": req.connection.remoteAddress,
+		"REMOTE_ADDR": req.connection.remoteAddress.replace(/^\:\:ffff\:/, ""),
 		"REQUEST_METHOD": req.method,
-		"HTTP_HOST": req.headers.host,
-		"HTTP_USER_AGENT": req.headers["user-agent"],
-		"HTTP_REFERER": req.headers.referer,
-		"HTTP_X_FORWARDED_FOR": req.headers["x-forwarded-for"],
-		"HTTP_X_FORWARDED_PROTO": req.headers["x-forwarded-proto"],
-		"HTTP_ORIGIN": req.headers.origin,
-		"HTTP_AUTHORIZATION": req.headers.authorization,
 		"PATH_INFO": paths.slice(1).join(".asp"),
 		"URL": paths[1] ? paths[0] + ".asp" : paths[0]
 	};
+	for(var x in req.headers) site.env["HTTP_" + x.toUpperCase().replace(/\-/g, "_")] = req.headers[x];
 	// 输出错误信息
 	site.outerr = (msg, code = 500, more) => {
 		var err = { err: msg };
