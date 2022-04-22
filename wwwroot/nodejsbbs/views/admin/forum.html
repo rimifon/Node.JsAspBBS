@@ -1,0 +1,61 @@
+<style type="text/css">
+.main{ padding: 1in }
+.main .form{ width: 4in; margin: 0mm auto }
+.main .form span{ width: 1in; border-right: var(--bd); background-color: var(--bg); line-height: 1cm; text-align: right; padding-right: 2mm }
+.main .form p{ margin: 0mm; padding: 2mm }
+</style>
+<div class="mt bd">
+	<div class="cap tc">编辑版块</div>
+	<div class="main box">
+		<div class="form bd">
+			<div class="flex">
+				<span>上级版块：</span>
+				<p class="auto"><select>
+					<option value="0">论坛首页</option><% catas.forEach(function(x) { %>
+					<option value="<%= act(x.forumid, forum.pid) %>"><%= x.nick %></option><% }); %>
+				</select></p>
+			</div>
+			<div class="flex" style="border-top: var(--bd)">
+				<span>版块名称：</span>
+				<p class="auto"><input name="nick" value="<%= forum.nick %>" placeholder="版块名称" size="28" /></p>
+			</div>
+			<div class="flex" style="border-top: var(--bd)">
+				<span>版块简介：</span>
+				<p class="auto"><textarea placeholder="版块简介" rows="3" cols="30"><%= forum.intro %></textarea></p>
+			</div>
+			<div class="flex" style="border-top: var(--bd)">
+				<span>排序：</span>
+				<p class="auto"><input name="sort" value="<%= forum.sort %>" placeholder="版块排序" /></p>
+			</div>
+		</div>
+		<p class="tc"><% if(forum.forumid > 0) { %>
+			<a onclick="dropForum()">删除版块</a><% } %>
+			<input type="button" value=" 保  存 " />
+			<input type="button" value="返回" />
+		</p>
+	</div>
+</div>
+<script type="text/javascript">
+var ipt = document.querySelectorAll("input, select, textarea");
+ipt[4].onclick = function() {
+	if(!ipt[1].value) return alert("请输入板块名称");
+	post("?r=admin/api/forumSave", {
+		forumid: "<%= forum.forumid %>", pid: ipt[0].value, nick: ipt[1].value, intro: ipt[2].value, sort: ~~ipt[3].value
+	}, function(res) {
+		if(res.err) return alert(res.err);
+		alert(res.msg);
+		location.assign(".");
+	});
+};
+
+ipt[5].onclick = function() { history.back(); };
+
+function dropForum() {
+	if(!confirm("确定要删除此版块吗？")) return;
+	post("?r=admin/api/forumDrop", { forumid: "<%= forum.forumid %>" }, function(res) {
+		if(res.err) return alert(res.err);
+		alert(res.msg);
+		location.assign(".");
+	});
+}
+</script>

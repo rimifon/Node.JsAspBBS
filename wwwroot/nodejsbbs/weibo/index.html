@@ -1,0 +1,419 @@
+<!doctype html><html lang="zh"><head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>JsAspBBS 微博模式</title>
+<base href="/" />
+<style type="text/css">
+body{ margin: 0mm; font: 4vw/6vw arial; background-color: #f5f7f8; color: #0b0b37 }
+a{ color: unset; text-decoration: none }
+img{ max-width: 100%; vertical-align: middle }
+.mt{ margin-top: 2vw }
+.bg{ background-color: #fff }
+.xs{ font-size: 3.5vw }
+.xxs{ font-size: 3vw }
+.flex{ display: flex }
+.flex .auto{ flex: 1 }
+.fl{ float: left }
+.tr{ text-align: right }
+.tc{ text-align: center }
+.hide{ display: none }
+.gray{ color: #8590a6 }
+input{ font: 4vw/6vw arial}
+.header{ background: #2469f6; color: #fff; text-align: center; padding: 8vw 0mm }
+.header h1{ font: italic 7vw/10vw arial; margin: 0mm; padding: 3vw 0mm }
+.header .flex div{ flex: 1 }
+.header span{ color: #a7c3fb }
+.header b{ font-weight: normal }
+.tab{ display: flex; overflow: auto; font: 3.5vw/12vw arial }
+.tab p{ margin: 0mm 4vw; white-space: nowrap }
+.tab .act{ font-weight: bold; color: #2469f6; border-bottom: 0.5vw solid #2469f6 }
+.ding{ line-height: 10vw; padding: 0mm 2vw }
+.ding .flex span{ color: #8590a6; padding: 0mm 4vw 0mm 2vw }
+.ding .flex a{ text-overflow: ellipsis; overflow: hidden; white-space: nowrap }
+.weibo{ padding: 4vw 4vw 0mm; max-height: 999vh; word-wrap: break-word }
+.weibo .user{ line-height: 5vw }
+.weibo .user .icon{ width: 10vw; height: 10vw; border-radius: 50%; background-color: #8590a6; color: #fff; margin-right: 2vw; line-height: 10vw; text-align: center }
+.weibo .user div{ color: #8590a6 }
+.weibo .reply{ margin-bottom: 2vw }
+.weibo .message a{ color: #2469f6 }
+.weibo .message .attach{ font-weight: bold; text-decoration: underline }
+.weibo .flex{ border-top: 0.3vw solid #eee; text-align: center }
+.weibo .flex div{ padding: 3vw; color: #8590a6 }
+.weibo .fixed .message{ max-height: 25vh; overflow: hidden; margin-bottom: -25vw }
+.weibo .fixed .show{ position: relative }
+.weibo .fixed .show:before{ content: ""; background-image: linear-gradient(rgba(255, 255, 255, 0), #fff); display: block; height: 16vw }
+.weibo .fixed .show:after{ content: "查看更多"; display: block; text-align: center; padding: 2vw; background-color: #fff; color: #2469f6 }
+.weibo .expand .show:after{ content: "折叠"; display: block; text-align: center; padding: 2vw; background-color: #fff; color: #2469f6 }
+.replies .say input{ border: 0.3vw solid #2469f6; height: 6vw; padding: 1vw 2vw; outline: none; border-radius: 1vw 0mm 0mm 1vw }
+.replies .say span{ border: 0.3vw solid #2469f6; background-color: #2469f6; color: #fff; padding: 1vw 3vw; border-radius: 0mm 1vw 1vw 0mm }
+.replies .ul{ max-height: 40vh; overflow: auto }
+.replies .ul .replytime{ color: #8590a6; font-size: 3vw }
+.replies .list .row{ border-top: 0.3vw solid #eee; padding: 3vw 1vw; max-height: 999vh }
+.replies .message{ background-color: #f5f7f8; border-radius: 2vw; padding: 1vw 2vw }
+.replies .more{ padding-bottom: 2vw; color: #2469f6 }
+.login.flex{ position: fixed; background-color:rgba(0, 0, 0, 0.5); bottom: 0mm; left: 0mm; top: 0mm; right: 0mm; flex-direction: column }
+.login .win{ width: 80vw; margin: 0mm auto; background-color: #f5f7f8; border-radius: 3vw }
+.login .win .cap{ padding: 2vw }
+.login .win .info{ background-color: #fff; padding: 2vw 4vw }
+.login .win .info .flex{ padding: 2vw }
+.login .win .info .flex span{ padding: 1vw }
+.login .win .info .flex input{ border: 0.3vw solid #ccc; width: 100%; padding: 1vw 2vw; outline: none; border-radius: 1vw }
+.login .win .btn div{ padding: 2vw }
+.code textarea{ width: 99%; height: 30vw; font: 4vw/6vw arial }
+.wait{ text-align: center; color: #8590a6; font: 3.5vw/20vh arial }
+</style></head><body>
+<div class="header">
+	<h1>-</h1>
+	<div class="flex">
+		<div><span>成员：</span><b>-</b></div>
+		<div><span>内容：</span><b>-</b></div>
+		<div><span>💞</span><a href="."><b>论坛</b></a></div>
+	</div>
+</div>
+<!-- Tab 分页 -->
+<div class="tab bg">
+	<p class="act" data-id="0">全部</p>
+</div>
+<!-- 置顶列表 -->
+<div class="mt bg ding xs">
+	<div class="flex">
+		<span>置顶</span>
+		<a class="tt title auto">实际的帖子标题需通过 fetch 加载</a>
+	</div>
+</div>
+<!-- 微博列表 -->
+<div>
+	<div class="wait">加载中…</div>
+	<div class="weibo mt bg">
+		<div class="user xs">
+			<b class="tt fname icon fl">用</b>
+			<b class="tt nick">用户名</b>
+			<div class="tt posttime xxs">2022-04-06</div>
+		</div>
+		<div class="mt"><a target="_blank"><b class="tt title">请通过浏览器访问查看实际标题</b></a></div>
+		<div>
+			<div class="tt message reply">您看到的是模板页面内容，真实数据需要使用浏览器加载才可查阅。</div>
+			<div class="show" onclick="toggleShow(parentNode)"></div>
+		</div>
+		<div class="flex xs">
+			<div>🔥 <span class="tt pv">0</span></div>
+			<div class="auto btn-pl">💬 <span class="tt replynum"></span></div>
+			<div><a class="tt btn1" target="_blank">详情</a></div>
+		</div>
+		<!-- 回复展示 -->
+		<div class="replies">
+			<div class="say tc">
+				<div class="flex"><input name="message" placeholder="请输入您的评论" class="auto" /><span class="xs">发表</span></div>
+			</div>
+			<div class="ul mt">
+				<div class="list">
+					<div class="row">
+						<div class="xs"><b class="tt nick">-</b> <span class="tt replytime">2022-04-10 12:34:56</span></div>
+						<div class="tt message">您看到的是模板页面内容，并非真实回复。真实数据需要使用浏览器加载才可查阅。</div>
+					</div>
+				</div>
+				<div class="xs tc more hide">加载更多</div>
+			</div>
+		</div>
+	</div>
+</div>
+<!-- 登录窗口 -->
+<div class="login hide">
+	<div class="auto"></div>
+	<div class="win">
+		<div class="cap tc">用户登录</div>
+		<div class="info">
+			<div class="tr xs gray"><a href="?r=register">没有注册？</a></div>
+			<div class="flex">
+				<span>账号：</span>
+				<input class="auto" placeholder="请输入用户名" name="user" />
+			</div>
+			<div class="flex">
+				<span>密码：</span>
+				<input type="password" class="auto" name="pass" placeholder="请输入密码" />
+			</div>
+			<p></p>
+		</div>
+		<div class="btn flex tc">
+			<div class="auto">取消</div>
+			<div class="auto">登录</div>
+		</div>
+	</div>
+	<div class="auto"></div>
+</div>
+<script type="text/javascript">
+// tab 分页模板
+var tab = new function() {
+	this.bind = function(rows) {
+		rows.forEach(function(r) {
+			var p = document.createElement("p");
+			p.innerHTML = r.nick;
+			p.setAttribute("data-id", r.forumid);
+			menu.appendChild(p);
+		});
+	};
+	var menu = document.querySelector(".tab");
+	var item = menu.querySelector("p");
+	var actItem = item;
+	menu.addEventListener("click", function(e) {
+		if (e.target.nodeName != "P") return;
+		if(e.target == actItem) return;
+		actItem.className = "";
+		actItem = e.target;
+		actItem.className = "act";
+		weibos.forumid = ~~actItem.dataset.id;
+		weibos.lastid = 0;
+		weibos.showwait();
+		weibos.loadmore();
+	});
+};
+
+// 微博列表模板
+var weibos = new function() {
+	this.bind = function(rows) {
+		rows.forEach(function(x) {
+			x.fname = x.nick.substr(0, 1);
+			x.date = x.posttime.substr(0, 10);
+			x.btn1 = "详情";
+			tt.forEach(function(y) {
+				var col = y.classList[1];
+				y.innerHTML = fmtMsg(x[col]);
+				var href = "?r=topic/" + x.topicid;
+				if(col == "replynum" || col == "title") y.parentNode.href = href;
+				if(col == "btn1") y.href = href;
+			});
+			var row = list.appendChild(temp.cloneNode(true));
+			var reply = row.querySelector(".reply").parentNode;
+			var img = row.querySelectorAll("img");
+			var clipd = setClip(reply);
+			img.forEach(function(x) {
+				x.onload = x.onerror = function() {
+					if(clipd) return;
+					clipd = setClip(reply);
+				};
+			});
+			tempPL.init(row, x);
+		});
+	};
+	this.loadmore = function() {
+		var form = new Object;
+		if(this.lastid) form.lastid = this.lastid;
+		if(this.forumid) form.forumid = this.forumid;
+		post("weibo/topicList", form, function(res) {
+			weibos.loading = false;
+			if(res.err) return alert(res.err);
+			if(!weibos.lastid) {
+				list.innerHTML = "";
+				dings.bind(res.dings);
+			}
+			weibos.lastid = res.topics.length > 10 ? res.topics.pop().topicid : 0;
+			weibos.bind(res.topics);
+		});
+		this.loading = true;
+	};
+	this.clear = function() { list.innerHTML = ""; };
+	this.showwait = function() { list.innerHTML = "<div class='wait'>加载中...</div>"; };
+	function setClip(reply) {
+		// 判断 reply 的高度，如果超过屏幕高度，则裁剪
+		if(reply.offsetHeight > window.innerHeight / 4) {
+			reply.className = "fixed"; return true;
+		}
+		return false;
+	}
+	var temp = document.querySelector(".weibo");
+	var tempPL = new TempPL(temp.querySelector(".replies .list .row"));
+	var tt = temp.querySelectorAll(".tt");
+	var list = temp.parentNode;
+	list.removeChild(temp);
+};
+
+// 评论列表模板
+function TempPL(temp) {
+	var me = this;
+	this.init = function(topic, data) {
+		// 闭包作用域范围：单个主题
+		var btnPL = topic.querySelector(".flex .btn-pl");	// 显示评论列表按钮
+		var layPL = topic.querySelector(".replies");
+		data.tagSay = layPL.querySelector(".say");
+		data.tagIpt = data.tagSay.querySelector(".flex");
+		data.tagNum = topic.querySelector(".replynum");
+		data.tagSay.innerHTML = "";
+		
+		layPL.className = "hide";
+		// 显示/隐藏评论列表
+		btnPL.addEventListener("click", function() {
+			if(login.hasLogin) data.showSay();
+			layPL.className = layPL.className == "replies" ? "hide" : "replies";
+			if(data.more) return;	// 如需刷新，delete data.more
+			data.ul = layPL.querySelector(".ul .list");
+			// 重新初始化参数
+			data.ul.innerHTML = ""; data.lastid = 0;
+			// 加载更多
+			data.more = layPL.querySelector(".more");
+			data.more.onclick = function() {
+				if( data.lastid > 0) loadReplies(data);
+			};
+			loadReplies(data);
+		});
+		// 已登录显示评论框
+		data.showSay = function() {
+			this.tagSay.innerHTML = "";
+			this.tagSay.appendChild(this.tagIpt);
+		};
+		// 未登录显示登录按钮
+		data.showLogin = function() {
+			this.tagSay.innerHTML = "<u>登录后可发表评论</u>";
+			this.tagSay.lastChild.onclick = function() { login.show(data); };
+		};
+		// 点击发表评论
+		data.tagIpt.querySelector("span").onclick = function() {
+			if(data.replying) return;
+			data.replying = true;
+			var ipt = data.tagIpt.querySelector("input");
+			var txt = ipt.value;
+			if(!txt) return alert("请输入评论内容");
+			post("api/replyAdd", { topicid: data.topicid, message: txt }, function(res) {
+				data.replying = false;
+				if(res.err) return alert(res.err);
+				data.tagNum.innerHTML -= -1;
+				data.lastid = 0; ipt.value = data.ul.innerHTML = "";
+				alert(res.msg); loadReplies(data);
+			});
+		};
+	};
+	// 绑定列表
+	this.bind = function(ul, rows) {
+		rows.forEach(function(r) {
+			r.message = fmtMsg(r.message);
+			tt.forEach(function(y) {
+				var col = y.classList[1];
+				y.innerHTML = r[col];
+			});
+			ul.appendChild(temp.cloneNode(true));
+		});
+	};
+	// 闭包作用域范围：所有主题
+	function loadReplies(data) {
+		if(data.posting) return;
+		data.posting = true;
+		var form = { topicid: data.topicid, firstid: data.replyid, lastid: ~~data.lastid };
+		if(form.lastid < 0) return;
+		post("weibo/replies", form, function(res) {
+			data.posting = false;
+			if(res.err) return alert(res.err);
+			data.lastid = res.replies.length > 10 ? res.replies.pop().replyid : -1;
+			data.more.className = data.lastid < 0 ? "xs tc more hide" : "xs tc more";
+			!res.userid ? data.showLogin() : data.showSay();
+			me.bind(data.ul, res.replies);
+		});
+	}
+	var tt = temp.querySelectorAll(".tt");
+	temp.parentNode.removeChild(temp);
+}
+
+// 置顶列表模板
+var dings = new function() {
+	this.bind = function(rows) {
+		list.innerHTML = "";
+		rows.forEach(function(x) {
+			tt.forEach(function(y) {
+				y.innerHTML = x[y.classList[1]];
+			});
+			tt[0].href = "?r=topic/" + x.topicid;
+			var row = list.appendChild(temp.cloneNode(true));
+		});
+	};
+	var temp = document.querySelector(".ding .flex");
+	var tt = temp.querySelectorAll(".tt");
+	var list = temp.parentNode;
+	list.removeChild(temp);
+};
+
+// 加载首页数据
+post("weibo/home", "", function(res) {
+	if(res.err) return alert(res.err);
+	// 绑定头部信息
+	var header = document.querySelectorAll(".header h1, .header b");
+	header[0].textContent = document.title = res.sitename;
+	header[1].textContent = res.total.users;
+	header[2].textContent = res.total.topics;
+	tab.bind(res.forums);
+	dings.bind(res.dings);
+	weibos.lastid = res.topics.length > 10 ? res.topics.pop().topicid : 0;
+	// 绑定微博列表
+	weibos.clear();
+	weibos.bind(res.topics);
+});
+
+// Post 请求
+function post(api, form, func) {
+	fetch("/?r=" + api, {
+		headers: { "Content-Type": "application/x-www-form-urlencoded" },
+		body: parseForm(form), method: "POST"
+	}).then(function(response) { return response.json(); }).then(function(json) { func(json); });
+}
+// 解析表单
+function parseForm(form) {
+	if(!form) return "";
+	if("object" != typeof form) return form;
+	var arr = new Array;
+	for(var x in form) {
+		arr.push(encodeURIComponent(x) + "=" + encodeURIComponent(form[x]));
+	}
+	return arr.join("&");
+}
+// 论坛帖子格式化
+function fmtMsg(str) {
+	var str = str + "", arrCode = new Array;
+	str = str.replace(/\[html\]([\s\S]+?)\[\/html\]/gi, function(txt, code) {
+		arrCode.push(code);
+		return "[html=\x01]";
+	});
+	str = str.replace(/\t/g, "    ").replace(/  /g, "&nbsp; ").replace(/\r?\n/g, "<br />\r\n").
+	replace(/\[(.+?)\]\(http(.+?)\)/g, '<a href="http$2" target="_blank">$1</a>').
+		replace(/\[(image|upload)=([^\]]+)\]/g, function(src, $1, $2) {
+			var file = $2.split("|");
+			return $1 == "image" ? '<div><a href="' + file[0] + '" target="_blank"><img src="' + file[0] + '" alt="' + file[1] + '" /></a></div>'
+				: ('<a href="' + file[0] + '" class="attach" target="_blank">' + file[1] + '</a>(' + file[2] + ')');
+		});
+	return str.replace(/\[html=\x01\]/g, function() {
+		return '<div class="code"><textarea>' + arrCode.shift() + '</textarea><p class="tr">[您可以先修改代码再运行] <input type="button" value="执行代码" onclick="runcode(parentNode)" /></p></div>';
+	});
+}
+function runcode(tag) {
+	var win = open("about:blank", "_blank", "");
+	win.document.write(tag.parentNode.firstChild.value);
+}
+
+// 切换显示收缩
+function toggleShow(tag) { tag.className = tag.className == "fixed" ? "expand" : "fixed"; }
+
+var login = new function() {
+	this.show = function(data) { tag.className = "login flex"; this.topic = data; };
+	this.hide = function() { tag.className = "login hide"; };
+	var tag = document.querySelector(".login");
+	var ipt = tag.querySelectorAll(".win .info input");
+	var btn = tag.querySelectorAll(".win .btn div");
+	btn[0].onclick = function() { me.hide(); };
+	btn[1].onclick = function() {
+		// 用户登录
+		if(!ipt[0].value || !ipt[1].value) return alert("请输入用户名和密码");
+		post("api/login", { user: ipt[0].value, pass: ipt[1].value }, function(res) {
+			if(res.err) return alert(res.err);
+			me.topic?.showSay();	// 登录成功后立即显示发布框
+			me.hide(); me.hasLogin = true;
+		});
+	};
+	var me = this;
+};
+
+// 触底事件
+window.onscroll = function() {
+	var root = document.documentElement;
+	// 设置触底距离
+	var reach = root.clientHeight / 20, stop = root.scrollTop || document.body.scrollTop;
+	if(root.scrollHeight - stop - root.clientHeight > reach) return;
+	if(weibos.loading || !weibos.lastid) return;
+	weibos.loadmore();
+};
+</script>
+</body></html>

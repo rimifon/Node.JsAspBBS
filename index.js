@@ -1,11 +1,12 @@
 const port = process.argv[2] ?? 3000;
-const indexPages = [ "index.html", "default.asp" ];
 const sites = [
 	{ domain: "default", root: "wwwroot/default" },
-	{ domain: "127.34.56.78", root: "wwwroot/127.34.56.78" }
+	{ domain: "127.34.56.78", root: "wwwroot/127.34.56.78" },
+	{ domain: "127.34.56.77", root: "wwwroot/nodejsbbs" }
 ];
-const cache = new Object;
+const indexPages = [ "index.html", "default.asp" ];
 
+const cache = new Object;
 const fs = require("fs");
 const http = require("http");
 const url = require("url");
@@ -36,7 +37,7 @@ http.createServer((req, res) => {
 	// 禁止访问 app_data 目录
 	if(/app_data/i.test(site.env.URL)) return site.outerr("403 Forbidden", 403);
 	// 获取目录相对位置（根目录还是请求目录）
-	site.getPath = file => path.join(file[0] == "/" ? host.root : path.join(host.root, site.env.URL), file);
+	site.getPath = file => path.join(file[0] == "/" ? host.root : path.dirname(path.join(host.root, site.env.URL)), file);
 
 	// 判断是目录还是文件
 	fs.stat(path.join(site.host.root, site.env.URL), (err, stats) => {
@@ -85,9 +86,10 @@ const IIS = {
 	// ASP 请求处理
 	,asp(site) {
 		var file = path.join(site.host.root, site.env.URL);
-		site.body = "";
-		site.req.on("data", chunk => { site.body += chunk; });
+		site.buffer = Buffer.alloc(0);
+		site.req.on("data", chunk => { site.buffer = Buffer.concat([site.buffer, chunk]); });
 		site.req.on("end", () => {
+			site.body = site.buffer.toString();
 			// 解析表单内容
 			site.form = parseForm(site);
 			fs.readFile(file, "utf-8", (err, code) => {
@@ -137,28 +139,30 @@ function getMime(ext) {
 // 解析表单内容
 function parseForm(site) {
 	// 判断 是否 Multipart/form-data
-	if(site.req.headers["content-type"] == "multipart/form-data") return parseMultipart(site);
+	if(/multipart\/form-data/i.test(site.req.headers["content-type"])) return parseMultipart(site);
 	// 判断 是否 application/x-www-form-urlencoded
 	if(site.req.headers["content-type"] == "application/x-www-form-urlencoded") return parseUrlEncoded(site);
 	// 输出 JSON
-	try{ return JSON.parse(site.body || "{}"); }catch(e){ return e; }
+	try { return JSON.parse(site.body || "{}"); } catch(e) { return e; }
 }
 
 // 上传内容处理
 function parseMultipart(site) {
-	var form = new Object;
-	var boundary = site.req.headers["content-type"].split("=")[1];
-	var body = site.body.split(boundary);
-	body.forEach(item => {
-		var [ key, value ] = item.split("\r\n\r\n");
-		var [ type, name ] = key.split("; ");
-		var [ , filename ] = type.split("=");
-		var [ , filetype ] = type.split("=");
-		var [ , filesize ] = type.split("=");
-		var [ , filepath ] = type.split("=");
-		var [ , file ] = value.split("\r\n");
-		form[name] = { filename, filetype, filesize, filepath, file };
-	});
+	var form = new Object, start = 0;
+	var boundary = site.req.headers["content-type"].split("boundary=")[1];
+	if(!boundary) return form;
+	while(true) {
+		let ost = site.buffer.indexOf(boundary, start);
+		if(ost < 0) break;
+		let item = site.buffer.slice(start, ost);
+		start = ost + boundary.length;
+		let line = item.indexOf("\r\n\r\n");
+		if(line < 0) continue;
+		let key = item.slice(0, line).toString();
+		let data = item.slice(item.indexOf("\r\n\r\n") + 4, -4);
+		let [ , field, , name ] = key.split('"');
+		form[field] = { name, data, size: data.length };
+	}
 	return form;
 }
 
@@ -239,12 +243,6 @@ function includeFile(code, site) {
 // ASP 辅助方法
 function aspHelper(site) {
 	var helper = {
-		// apidoc(api, route, dep = 0) {
-		// 	var ctrl = route[dep]?.toLowerCase() || "index";
-		// 	if(!api[ctrl]) return { err: "Controller not found." };
-		// 	if("function" == typeof api[ctrl]) return api[ctrl]();
-		// 	return helper.apidoc(api[ctrl], route, dep + 1);
-		// },
 		// include 方法
 		include(file, args) {
 			var fpath = path.dirname(path.join(site.host.root, site.env.URL));

@@ -1,0 +1,148 @@
+<style type="text/css">
+@media screen and (min-width: 721px) {
+.pad{ padding: 2mm 4mm }
+.bd .flex .icon{ padding: 2mm 3mm; background-color: var(--bg) }
+.bd .flex .box{ border-left: var(--bd) }
+.user .ipt{ width: 1in }
+.user .auto a{ color: #900; font-weight: bold; text-decoration: underline }
+.user .box{ padding: 2mm 4mm }
+.bd .box .col{ padding: 2mm 3mm }
+.bd .box .odd{ background-color: var(--bg); border-left: var(--bd); border-right:var(--bd) }
+.club .tj{ font: 9pt/4mm simsun; min-width: 2cm }
+.club .tj b{ color: #900 }
+.club .col select{ width: 2cm }
+.club .main .box .title{ flex: 4 }
+.online .list{ border-top: var(--bd); padding-top: 2mm; flex-wrap: wrap; margin-top: 2mm }
+.online .list .li{ width: 4cm }
+.user .box:hover .add-forum:after{ content: "新建板块" }
+.club .cap:hover a.fr:after, .club .title:hover a.fr:after{ content: "管理" }
+}
+@media screen and (max-width: 720px) {
+.pad{ padding: 1vw 2vw }
+.user .main .box{ padding: 2vw; text-align: center }
+.user .main .box span.ipt{ display: block; padding: 2vw }
+.user .main .box input{ font: 4vw/6vw arial; vertical-align: middle }
+.club .cap img{ height: 3vw }
+.club .main .box{ flex-direction: column }
+.club .main .box .title{ padding: 2vw; border-top: var(--bd) }
+.club .main .box .title a{ font-weight: bold; float: right; color: #900 }
+.club .main .box .title div{ color: #777; width: 70vw; font-size: 3vw; white-space: nowrap; text-overflow: ellipsis; overflow: hidden }
+.club .main .box .wap-tj{ display: flex; color: #789; text-align: center; border-top: var(--bd); border-bottom: var(--bd); margin: 0mm 2vw; padding: 1vw 0mm; font: 3vw/4vw arial }
+.club .main .box .wap-tj>div{ flex: 1 }
+.club .main .box .wap-tj b{ color: #900 }
+.club .main .box .wap-tj .fr{ float: none }
+.club .main .box .odd.tj{ padding: 2vw; max-width: 92vw }
+.club .main .box .odd.tj>div:nth-of-type(2){ float: left; width: 64vw; font-size: 3vw; color: #777 }
+.club .main .box .odd.tj>div:nth-of-type(3){ margin-left: 64vw; color: #08c; font-size: 3vw }
+.online .list{ flex-wrap: wrap; padding: 1vw 2vw; font-size: 3.5vw }
+.online .list .li{ width: 22.8vw; text-overflow: ellipsis; white-space: nowrap; overflow: hidden }
+.online .list .li img{ height: 3vw }
+.online .info{ font: 3.5vw/5vw arial; margin: 0mm 2vw; border-bottom: var(--bd); padding-bottom: 1vw }
+}
+</style>
+<!-- 用户信息 / 登录 -->
+<div class="user bd mt">
+	<div class="cap">-=> <%= me().isLogin ? "会员信息预览" : "快速登录入口" %><span class="for-web">　&nbsp; [
+		来自：<%= env("REMOTE_ADDR") %>，时间：<%= sys.sTime %>，
+		系统： <%= (env("HTTP_USER_AGENT").match(/windows|android|macintosh|linux|ios|iphone|ipad/i) || [ "未知系统" ])[0] %>
+	]</span></div>
+	<div class="flex main">
+		<div class="icon for-web"><img src="<%= sys.res %>icon/userlist2.gif" /></div>
+		<div class="auto box"><% if(!me().isLogin) { %>
+			<span class="ipt">用户名：<input class="ipt" name="user" placeholder="用户账号" /> &nbsp;</span>
+			<span class="ipt">密 &nbsp;码：<input class="ipt" name="pass" type="password" placeholder="登录密码" /> &nbsp;</span>
+			<span class="for-web">登录到：<select name="redir">
+				<option value=".">论坛首页</option><% for(var i = 0; i < forums.length; i++) { var x = forums[i]; %>
+				<optgroup label="<%= x.nick %>"><% for(var c = 0; c < x.list.length; c++) { var r = x.list[c]; %>
+					<option value="?r=forum/<%= r.forumid %>"><%= r.nick %></option><% } %>
+				</optgroup><% } %>
+			</select> &nbsp;</span>
+			<input type="button" value=" 登  录 " /> &nbsp;
+			<a href="?r=register">注册新用户</a><% } else { if(me().roleid > 6) { %>
+			<a href="?r=admin/forum/0" class="fr add-forum"></a><% } %>
+			昵称：<%= me().nick %>，发帖量：<%= me().fatie %>，积分：<%= me().jifen %><span class="for-web">，身份：<%= roles[me().roleid] %>，
+			登录时间：<%= tojson(me().lasttime).slice(1, -1) %>，<a href="?r=logout">退出登录</a></span><% } %>
+		</div>
+	</div>
+</div><% for(var i = 0; i < forums.length; i++) { var x = forums[i]; %>
+<!-- 板块最新信息 -->
+<div class="club mt bd">
+	<div class="cap"><% if(me().roleid > 6) { %>
+		<a href="?r=admin/forum/<%= x.pid %>" class="fr"></a><% } %>
+		<img src="<%= sys.res %>cat1.gif" /> <%= x.nick %>
+	</div><% for(var c = 0; c < x.list.length; c++) { var r = x.list[c]; %>
+	<div class="flex main">
+		<div class="icon flex ac for-web"><div><img src="<%= sys.res %>icon/folder.gif" /></div></div>
+		<div class="auto flex box">
+			<div class="title col"><% if(me().roleid > 6) { %>
+				<a href="?r=admin/forum/<%= r.forumid %>" class="fr"></a><% } %>
+				<a href="?r=forum/<%= r.forumid %>"><%= r.nick %></a>
+				<div><img src="<%= sys.res %>icon/forumme.gif" /><%= r.intro %></div>
+			</div>
+			<div class="col odd flex ac for-web"><div><select>
+				<option>版主列表</option><% for(var b = 0; b < r.banzhu.length; b++) { %>
+				<option value="<%= r.banzhu[b].userid %>"><%= r.banzhu[b].nick %></option><% } %>
+			</select></div></div>
+			<div class="col tj wap-tj">
+				<div>今日：<b class="fr"><%= r.topicday %></b></div>
+				<div>主题：<span class="fr"><%= r.topicnum %></span></div>
+				<div>回复：<span class="fr"><%= r.replynum %></span></div>
+			</div>
+			<div class="col odd tj auto">
+				<div class="ellipsis">主题：<%= r.title ? r.title.link("?r=topic/" + r.topicid) : "-" %></div>
+				<div class="ellipsis">最后发表：<%= r.zuozhe || "-" %></div>
+				<div class="ellipsis"><%= r.replytime == null ? "暂时没有更新" : tojson(r.replytime).slice(1, -1) %></div>
+			</div>
+			<div class="col flex ac for-web"><a><img src="<%= sys.res %>icon/fav_add.gif" /></a></div>
+		</div>
+	</div><% } %>
+</div><% } %>
+<!-- 论坛在线统计 -->
+<div class="online bd mt">
+	<div class="cap">-=&gt; 论坛在线统计 <span class="for-web">（同时在线峰值：<%= site.topOnline %> 人，发生时刻：<%= new Date(site.topOntime) %>）</span></div>
+	<div class="main flex">
+		<div class="icon flex ac for-web"><div><img src="<%= sys.res %>icon/online.gif" /></div></div>
+		<div class="box auto pad">
+			<div class="info">
+				目前总共有 <%= online.users.all %> 人在线。其中注册用户 <%= online.users.reg %> 人，访客 <%= online.users.guest %> 人。 论坛总共被访问 <%= site.uv %> 次，共被点击 <%= site.pv %> 次。<br />
+				<span class="for-web">在线图例：
+				<img src="<%= sys.res %>online/7.gif" />论坛坛主
+				<img src="<%= sys.res %>online/6.gif" />论坛总版主
+				<img src="<%= sys.res %>online/5.gif" />分类区版主
+				<img src="<%= sys.res %>online/4.gif" />论坛版主
+				<img src="<%= sys.res %>online/3.gif" />论坛副版主
+				<img src="<%= sys.res %>online/2.gif" />认证会员
+				<img src="<%= sys.res %>online/1.gif" />普通会员
+				<img src="<%= sys.res %>online/0.gif" />客人或隐身会员</span>
+			</div>
+			<div class="list flex"><% online.rows.forEach(function(x) { %>
+				<div class="li" title="<%= onlineInfo(x) %>">
+					<img src="<%= sys.res %>online/<%= x.roleid %>.gif" /><%= x.sessId == ss().sessId ? x.nick.fontcolor("blue") : x.nick %>
+				</div><% }); %>
+			</div>
+		</div>
+	</div>
+</div>
+<script type="text/javascript">
+new function() {
+	var ipt = document.querySelectorAll(".user input, .user select");
+	if(ipt.length < 4) return;
+	ipt[0].onkeypress = ipt[1].onkeypress = function(e) {
+		if(e.keyCode != 13) return;
+		doLogin();
+	};
+	ipt[3].onclick = doLogin;
+	
+	function doLogin() {
+		if(!ipt[0].value) return alert("请输入用户名"), ipt[0].focus();
+		if(!ipt[1].value) return alert("请输入密码"), ipt[1].focus();
+		post("?r=api/login", {
+			user: ipt[0].value, pass: ipt[1].value
+		}, function(res) {
+			if(res.err) return alert(res.err);
+			alert(res.msg);
+			location.assign(ipt[2].value);
+		});
+	};
+}
+</script>

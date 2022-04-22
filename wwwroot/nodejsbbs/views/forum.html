@@ -1,0 +1,211 @@
+<style type="text/css">
+@media screen and (min-width: 721px) {
+.pos{ padding: 1mm 3mm; background-color: var(--bg) }
+.col{ border-left: var(--bd); box-sizing: border-box }
+.cap .col{ padding: 2mm 0mm }
+.main .col{ padding: 2mm }
+.main .col .bold{ font-weight: bold; color: #900 }
+.list .main:hover{ background-color: var(--bg) }
+.admin{ display: none }
+.admin a{ cursor: pointer; color: #777 }
+.list .main:hover .admin{ display: block }
+.c1{ width: 1cm; border-left: none }
+.c2{ width: 1in }
+.c3{ width: 1in }
+.c4{ width: 7cm }
+.nonew{ background: var(--bg) url(res/bbs/icon/topicnonew.gif) no-repeat center }
+.ding{ background: var(--bg) url(res/bbs/icon/abstop.gif) no-repeat center }
+a.blue{ color: blue }
+a.blue:before{ content: '[精]'; color: red; font-weight: bold }
+.post{ padding: 1cm }
+.form{ width: 6in; margin: 0mm auto; border-bottom: var(--bd); border-right: var(--bd) }
+.form .flex{ border-top: var(--bd) }
+.form .flex .auto{ padding: 2mm; border-left: var(--bd) }
+.user input{ width: 1in }
+.form .label{ width: 1in; text-align: right; background-color: var(--bg); padding: 2mm; border-left: var(--bd) }
+.form .ipt{ border-bottom: var(--bd); margin-left: 3cm; padding: 1mm 2mm }
+textarea{ background-color: #eee }
+.pager b{ color: #900 }
+.online .list{ flex-wrap: wrap }
+.online .list .li{ width: 4cm }
+.online .icon{ padding: 2mm 3mm; background-color: var(--bg) }
+.online .pad{ border-left: var(--bd); padding: 2mm 4mm }
+}
+@media screen and (max-width: 720px) {
+.online .cap{ font-size: 3.5vw }
+.online .list{ padding: 1vw 2vw; border-top: var(--bd); flex-wrap: wrap; font-size: 3.5vw }
+.online .list .li{ width: 23.1vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+.online .list img{ height: 3vw }
+.topic .cap{ line-height: 8vw }
+.topic .admin{ float: none; text-align: right; font: 3vw/4vw arial; transform: translateY(6vw); margin-bottom: -4vw }
+.topic .main{ display: block; border-top: var(--bd); padding: 1vw 2vw }
+.topic .main .auto a.title{ display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+.topic .main .c4{ text-align: left; color: #777; font: 3vw/4vw times }
+.topic .main a.bold{ color: #900 }
+.topic .main a.blue{ color: blue }
+.post{ padding-bottom: 4vw }
+.post .form{ border-top: var(--bd) }
+.post .form .flex{ border-bottom: var(--bd) }
+.post .form .label{ padding: 1vw 2vw; background-color: var(--bg); width: 20vw }
+.post .form .auto{ border-left: var(--bd); padding: 1vw 2vw }
+.post .form .auto *{ border: none; width: 100%; vertical-align: middle; outline: none; font: 4vw/6vw arial }
+.post .form .auto textarea{ height: 20vw }
+.post .form .user input{ width: 32vw }
+.post .btn input{ font: 4vw/6vw arial; padding: 1vw 4vw }
+} 
+</style>
+<div class="pos mt bd">
+	<a href="."><%= sys.name %></a> → <%= forum.nick %> → 浏览论坛主题
+</div>
+<!-- 论坛在线统计 -->
+<div class="online bd mt">
+	<div class="cap">
+		目前论坛总共有 <%= online.users.all %> 人，本分论坛共有 <%= online.rows.length %> 人在线。
+		<span class="for-web">其中注册用户 <%= online.users.reg %> 人，访客 <%= online.users.guest %> 人。</span>
+	</div>
+	<div class="main flex">
+		<div class="icon flex ac for-web"><div><img src="<%= sys.res %>icon/online.gif" /></div></div>
+		<div class="box auto pad">
+			<div class="list flex"><% online.rows.forEach(function(x) { %>
+				<div class="li" title="<%= onlineInfo(x) %>">
+					<img src="<%= sys.res %>online/<%= x.roleid %>.gif" /><%= x.sessId == ss().sessId ? x.nick.fontcolor("blue") : x.nick %>
+				</div><% }); %>
+			</div>
+		</div>
+	</div>
+</div>
+<div class="topic bd mt list">
+	<div class="tc flex cap" style="padding: 0mm">
+		<div class="col c1 for-web">状态</div>
+		<div class="col auto">主　题</div>
+		<div class="col c2 for-web">作者</div>
+		<div class="col c3 for-web">回复/点击</div>
+		<div class="col c4 for-web">最后更新 | 回复人</div>
+	</div><% rows.forEach(function(x) { %>
+	<div class="main flex">
+		<div class="col c1 <%= x.ding ? 'ding' : 'nonew' %>"></div>
+		<div class="col auto"><% if(isBZ) { %>
+			<div class="admin fr" data-item="<%= x.topicid %>|<%= x.ding %>|<%= x.jing %>">
+				<a onclick="doDing(parentNode)"><%= x.ding ? "取消" : "" %>固顶</a> |
+				<a onclick="doJing(parentNode)"><%= x.jing ? "取消" : "" %>加精</a> |
+				<a onclick="doDrop(parentNode)">删除</a>
+			</div><% } %>
+			<a href="?r=topic/<%= x.topicid %>" class="title <%= x.ding ? 'bold' : x.jing ? 'blue' : 'nml' %>"><%= x.title %></a><%= showPage(x) %>
+		</div>
+		<div class="col c2 tc for-web"><%= x.nick %></div>
+		<div class="col c3 tc for-web"><%= x.replynum %>/<%= x.pv %></div>
+		<div class="col c4 tc ellipsis"><%= x.replytime == null ? "-" : tojson(x.replytime).slice(1, -4) %> | <%= x.reply || "-" %></div>
+	</div><% }); %>
+</div>
+<div class="pager mt">分页：<%= makePager(pager, "?r=forum/" + forum.forumid + "/") || "暂无分页" %>，共 <%= pager.pagenum %> 页</div>
+<!-- 快速发表主题 -->
+<div class="bd mt">
+	<div class="cap tc">快速发表新主题</div>
+	<div class="box post">
+		<div class="form"><% if(!me().isLogin) { %>
+			<div class="flex">
+				<span class="label">账号/密码</span>
+				<div class="auto user">
+					<span class="for-web">用户：</span><input name="user" placeholder="请输入用户名" />
+					<span class="for-web"><a href="?r=register">没有注册？</a>
+					密码：</span><input name="pass" type="password" placeholder="请输入登录密码" />
+				</div>
+			</div><% } %>
+			<div class="flex">
+				<span class="label">主题标题</span>
+				<div class="auto"><input name="title" size="53" placeholder="请输入主题标题" /></div>
+			</div>
+			<div class="flex">
+				<span class="label">帖子内容</span>
+				<div class="auto"><textarea name="message" cols="52" rows="8" placeholder="请输入帖子内容"></textarea></div>
+			</div><% if(me().jifen > 49 || isBZ) { %>
+			<div class="flex">
+				<span class="label">附件或图片</span>
+				<div class="auto">
+					<input size="53" type="file" onchange="startUp(this)" />
+					<br />支持：txt|jpg|jpeg|gif|png|zip|rar
+				</div>
+			</div><% } %>
+		</div>
+		<input type="hidden" name="forumid" value="<%= forum.forumid %>" />
+		<div class="tc mt btn"><input type="button" value="发表新主题" /></div>
+	</div>
+</div>
+<script type="text/javascript">
+var ipt = document.querySelectorAll(".post input, .post textarea");
+ipt[ipt.length - 1].onclick = function() {
+	var data = new Object;
+	ipt.forEach(function(x) {
+		if(!x.name) return;
+		data[x.name] = x.value;
+	});
+	if("user" in data && !data.user) return alert("请填写用户名");
+	if("pass" in data && !data.pass) return alert("请填写密码");
+	if(!data.title) return alert("请填写主题标题");
+	if(!data.message) return alert("请填写帖子内容");
+	post("?r=api/topicAdd", data, function(res) {
+		if(res.err) return alert(res.err);
+		alert(res.msg);
+		location.assign("?r=forum/" + data.forumid);
+	});
+};
+function doDing(tag) {
+	var data = tag.dataset.item.split("|");
+	var op = data[1] == 1 ? "取消" : "";
+	if(!confirm("确定要" + op + "固定该帖子吗？")) return;
+	post("?r=api/topicDing", { topicid: data[0], state: data[1] == 1 ? 0 : 1 }, function(res) {
+		if(res.err) return alert(res.err);
+		alert(res.msg); location.reload();
+	});
+}
+function doJing(tag) {
+	var data = tag.dataset.item.split("|");
+	var op = data[2] == 1 ? "取消" : "";
+	if(!confirm("确定要给帖子" + op + "加精吗？")) return;
+	post("?r=api/topicJing", { topicid: data[0], state: data[2] == 1 ? 0 : 1 }, function(res) {
+		if(res.err) return alert(res.err);
+		alert(res.msg); location.reload();
+	});
+}
+function doDrop(tag) {
+	if(!confirm("确定要删除该帖子吗？")) return;
+	var data = tag.dataset.item.split("|");
+	post("?r=api/topicDrop", { topicid: data[0] }, function(res) {
+		if(res.err) return alert(res.err);
+		alert(res.msg); location.reload();
+	});
+}
+function startUp(x) {
+	var file = x.files[0];
+	var allow = /\.(txt|jpg|jpeg|gif|png|zip|rar)$/i;
+	if(!allow.test(file.name)) return alert("不支持的文件格式");
+	if(file.size > 1024 * 1024) return alert("文件不能大于 1Mb");
+	var body = new FormData;
+	body.append("file", file);
+	fetch("?r=api/upload", { method: "POST", body: body }).then(function(res){ return res.json(); }).
+		then(function(res) {
+			if(res.err == "需要登录") return login(x);
+			if(res.err) return alert(res.err);
+			var type = /\.(jpg|gif|png)$/i.test(res.path) ? "image" : "upload";
+			var fname = file.name.replace(/\[/g, "(").replace(/\]/g, ")");
+			fname += "|"+ parseSize(file.size, "Byte,Kb,Mb,Gb".split(","));
+			ipt[ipt.length - 4].value += "[" + type + "=" + res.path + "|" + fname + "]";
+			alert("上传成功");
+		}).catch(function(err) { alert("上传异常"); });
+}
+function login(file) {
+	if(ipt[0].name != "user") return alert("请尝试登录后继续操作");
+	var data = { user: ipt[0].value, pass: ipt[1].value };
+	if(!data.user || !data.pass) return alert("用户名和密码不能为空");
+	post("?r=api/login", data, function(res) {
+		if(res.err) return alert(res.err);
+		startUp(file);	// 重新发起上传
+	});
+}
+function parseSize(num, arr) {
+	if(!arr[1]) return num + arr[0];
+	if(num < 1024) return num + arr[0];
+	num = (num / 1024).toFixed(2) - 0;
+	return arr.shift(), parseSize(num, arr);
+}
+</script>

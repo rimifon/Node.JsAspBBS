@@ -23,6 +23,7 @@ function boot(route) {
 
 		,DbTestDoc: [ "数据库操作测试" ]
 		,async dbtest() {
+			dbg().trace("dbtest", "开始");
 			return await db().fetch("select datetime('now', 'localtime') as now");
 		}
 	}, route);

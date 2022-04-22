@@ -36,7 +36,7 @@ function dbg() {
 			// 记录调试信息
 			if(logs.rows.length) {
 				// 方法，路径，路由，时间，时长
-				logs.info = [ env("REQUEST_METHOD"), env("URL"), get("r"), tojson(sys.sTime), new Date - sys.sTime ];
+				logs.info = [ env("REQUEST_METHOD"), env("URL"), qstr("r"), tojson(sys.sTime), new Date - sys.sTime ];
 				cache.logs.unshift(logs);
 			}
 			if(cache.logs.length > 100) cache.logs.length = 100;
