@@ -276,7 +276,7 @@ function InitSession(site) {
 		if(!session[sessKey]) return;
 		// 离过期还有多少时间
 		var time = new Date - rs.time - 1000 * 60 * 20;
-		if(time < 0) return delete session[sessKey];
+		if(time > 0) return delete session[sessKey];
 		setTimeout(autoLogout, time);	// 重新计时
 	}
 	setTimeout(autoLogout, 1000 * 60 * 20);
