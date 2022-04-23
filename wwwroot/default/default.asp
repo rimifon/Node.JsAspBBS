@@ -660,7 +660,7 @@ async function initSite() {
 }
 
 function initOnline() {
-	// cc().JsAspBBSOnline = null;
+	// cc().NodeAspBBSOnline = null;
 	if(cc().NodeAspBBSOnline) return cc().NodeAspBBSOnline;
 	var ins = new Object, data = new Object;
 	var life = 20 * 6e4;	// 20分钟生存周期
