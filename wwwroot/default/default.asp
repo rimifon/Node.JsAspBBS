@@ -136,7 +136,7 @@ async function boot(route) {
 				select("b.*, c.nick, c.icon, c.jifen, c.fatie, c.regtime, c.lasttime, c.roleid, c.diqu").query();
 			var pager = db().pager;
 			var lou = (pager.curpage - 1) * pager.pagesize + 1;
-			await db().query("update topic set pv=pv+1 where topicid=@topicid", par);
+			await db().none("update topic set pv=pv+1 where topicid=@topicid", par);
 			var jifen = jifenHelper();	// 根据积分解析称号
 			// 暂定 1000 积分 为满分
 			var getPer = function(score){ return Math.round(score * 100 / Math.max(1e3, score)); };
@@ -183,7 +183,7 @@ async function boot(route) {
 				user.lastip = env("REMOTE_ADDR");
 				user.lasttime = sys.sTime.toJSON();
 				user.jifen++;
-				await db().query("update users set lastip=@lastip, lasttime=@lasttime, jifen=jifen+1 where userid=@userid", { lastip: user.lastip, lasttime: user.lasttime, userid: user.userid });
+				await db().none("update users set lastip=@lastip, lasttime=@lasttime, jifen=jifen+1 where userid=@userid", { lastip: user.lastip, lasttime: user.lasttime, userid: user.userid });
 				me().bind(user);
 				sys.onlineMe.nick = user.nick;
 				sys.onlineMe.roleid = user.roleid;
@@ -212,8 +212,8 @@ async function boot(route) {
 				await db().insert("reply", { topicid: topicid, userid: me().userid, ip: env("REMOTE_ADDR"), message: form().message });
 				var replyid = await db().scalar("select last_insert_rowid()");
 				// 更新发帖量
-				await db().query("update forums set topicnum=topicnum+1, replyid=@replyid where forumid=@forumid", { replyid: replyid, forumid: forumid });
-				await db().query("update users set fatie=fatie+1, jifen=jifen+5 where userid=@userid", { userid: me().userid });
+				await db().none("update forums set topicnum=topicnum+1, replyid=@replyid where forumid=@forumid", { replyid: replyid, forumid: forumid });
+				await db().none("update users set fatie=fatie+1, jifen=jifen+5 where userid=@userid", { userid: me().userid });
 				me().fatie++; me().jifen += 5;
 				dbg().trace(me().nick + "发表了帖子《" + form().title + "》");
 				return { msg: "发帖成功", topicid: topicid };
@@ -235,9 +235,9 @@ async function boot(route) {
 				if(!topic) return { err: "回复的帖子不存在" };
 				await db().insert("reply", par);
 				var replyid = await db().scalar("select last_insert_rowid()");
-				await db().query("update forums set replynum=replynum+1, replyid=@replyid where forumid=@forumid", { replyid: replyid, forumid: topic.forumid });
-				await db().query("update topic set replynum=replynum+1, replytime=datetime('now', 'localtime'), replyid=@userid where topicid=@topicid", { userid: me().userid, topicid: par.topicid });
-				await db().query("update users set jifen=jifen+2 where userid=@userid", { userid: me().userid });
+				await db().none("update forums set replynum=replynum+1, replyid=@replyid where forumid=@forumid", { replyid: replyid, forumid: topic.forumid });
+				await db().none("update topic set replynum=replynum+1, replytime=datetime('now', 'localtime'), replyid=@userid where topicid=@topicid", { userid: me().userid, topicid: par.topicid });
+				await db().none("update users set jifen=jifen+2 where userid=@userid", { userid: me().userid });
 				dbg().trace(me().nick + "评论了帖子《" + topic.title + "》");
 				me().jifen += 2; return { msg: "评论成功" };
 			}
@@ -254,9 +254,9 @@ async function boot(route) {
 				if(!reply) return { err: "此评论不存在" };
 				if(reply.userid != me().userid && !await isBanZhu(reply.forumid)) return { err: "您没删除此评论的权限" };
 				if(reply.replyid == reply.minid) return await this.topicdrop(reply.topicid);
-				await db().query("delete from reply where replyid=@replyid", par);
-				await db().query("update topic set replynum=replynum-1 where topicid=@topicid", { topicid: reply.topicid });
-				await db().query("update forums set replynum=replynum-1 where forumid=@forumid", { forumid: reply.forumid });
+				await db().none("delete from reply where replyid=@replyid", par);
+				await db().none("update topic set replynum=replynum-1 where topicid=@topicid", { topicid: reply.topicid });
+				await db().none("update forums set replynum=replynum-1 where forumid=@forumid", { forumid: reply.forumid });
 				return { msg: "评论删除成功" };
 			}
 
@@ -267,9 +267,9 @@ async function boot(route) {
 				var topic = await db().fetch("select userid, forumid, replynum from topic where topicid=@topicid", par);
 				if(!topic) return { err: "删除的话题不存在" };
 				if(me().userid != topic.userid && !await isBanZhu(topic.forumid)) return { err: "您没有权限删除这个帖子。" };
-				await db().query("delete from reply where topicid=@topicid", par);
-				await db().query("delete from topic where topicid=@topicid", par);
-				await db().query("update forums set replynum=replynum-@replynum, topicnum=topicnum-1 where forumid=@forumid", {
+				await db().none("delete from reply where topicid=@topicid", par);
+				await db().none("delete from topic where topicid=@topicid", par);
+				await db().none("update forums set replynum=replynum-@replynum, topicnum=topicnum-1 where forumid=@forumid", {
 					replynum: topic.replynum, forumid: topic.forumid
 				});
 				return { msg: "主题删除成功" };
@@ -366,7 +366,7 @@ async function boot(route) {
 					var site = fromjson(await db().table("site").scalar());
 					site.sitename = form("sitename");
 					site.weiboname = form("weiboname");
-					await db().query("update site set cfg=@cfg", { cfg: tojson(site) });
+					await db().none("update site set cfg=@cfg", { cfg: tojson(site) });
 					return site;
 				}
 
@@ -387,7 +387,7 @@ async function boot(route) {
 				,banzhudrop: async function() {
 					if(~~me().roleid < 7) return { err: "没有操作权限" };
 					var par = { forumid: ~~form().forumid, userid: ~~form().userid };
-					await db().query("delete from banzhu where forumid=@forumid and userid=@userid", par);
+					await db().none("delete from banzhu where forumid=@forumid and userid=@userid", par);
 					return { msg: "操作完成" };
 				}
 
@@ -424,9 +424,9 @@ async function boot(route) {
 						var topic = await db().table("topic").where("topicid=@topicid").fetch(where);
 						if(!topic) return { err: "帖子不存在" };
 						// 减少原版块的贴子数和回复数
-						await db().query("update forums set topicnum=topicnum-1, replynum=replynum-@replynum where forumid=@forumid", { replynum: topic.replynum, forumid: topic.forumid });
+						await db().none("update forums set topicnum=topicnum-1, replynum=replynum-@replynum where forumid=@forumid", { replynum: topic.replynum, forumid: topic.forumid });
 						// 增加新版块的贴子数和回复数
-						await db().query("update forums set topicnum=topicnum+1, replynum=replynum+@replynum where forumid=@forumid", { replynum: topic.replynum, forumid: par.forumid });
+						await db().none("update forums set topicnum=topicnum+1, replynum=replynum+@replynum where forumid=@forumid", { replynum: topic.replynum, forumid: par.forumid });
 					}
 					await db().update("topic", par, where);
 					return { msg: "操作完成" };
