@@ -447,7 +447,7 @@ async function boot(route) {
 					var par = { forumid: ~~form("forumid") };
 					if(await db().fetch("select 1 from topic where forumid=@forumid limit 0, 1", par)) return { err: "版块存在帖子，不可直接删除。" };
 					if(await db().fetch("select 1 from forums where pid=@forumid limit 0, 1", par)) return { err: "存在子版块，不可直接删除。" };
-					db().query("delete from forums where forumid=@forumid", par);
+					db().none("delete from forums where forumid=@forumid", par);
 					return { msg: "删除成功" }
 				}
 			}
@@ -514,7 +514,7 @@ async function boot(route) {
 					where("a.topicid=@topicid").fetch(par);
 				if(!topic) return { err: "主题不存在" };
 				sys.online.setWeiZhi("forum/" + topic.forumid, "[微博]" + topic.title, ss().sessId);
-				await db().query("update topic set pv=pv+1 where topicid=@topicid", par);
+				db().none("update topic set pv=pv+1 where topicid=@topicid", par);
 				// 获取回复列表
 				var where ="a.topicid=@topicid and a.replyid!=@firstid";
 				par.firstid = ~~form("firstid");
