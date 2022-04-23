@@ -20,6 +20,7 @@ function cc(k, f, t) {
 	try { var value = f(); }
 	catch(err) { throw err; }
 	var saveVal = value => {
+		if(value === k.none) return;
 		// 没有初始化
 		root[k] = { value, time: site.sys.sTime };
 		root[k].handler = setTimeout(() => {

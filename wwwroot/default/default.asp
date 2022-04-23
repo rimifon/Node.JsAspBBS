@@ -8,7 +8,7 @@ async function boot(route) {
 	sys.onerror = catchErr;
 	var roles = [ "客人", "普通会员", "认证会员", "论坛副版主", "论坛版主", "分类区版主", "论坛总版主", "论坛坛主" ];
 	let site = await initSite();
-	if(sys.isInit) return site;	// 系统初始化了，请刷新页面
+	if(!site) return;
 	return apidoc({
 		// 论坛首页
 		async index() {
@@ -617,6 +617,7 @@ async function isBanZhu(forumid, userid) {
 async function initSite() {
 	// 从数据库加载网站配置
 	let site = await cc("Site", async function() {
+		if(cc().siteInit) return errpage("网站正在初始化，请稍候再试");
 		try { var rs = await db().scalar("select * from site"); }
 		catch(err) { return await catchErr(err); }
 		rs = fromjson(rs);
@@ -630,7 +631,7 @@ async function initSite() {
 		}
 		return cc().SiteCfg = rs;
 	}, 9);
-	if(sys.isInit) return site;
+	if(!site) return;
 	site.pv = -~site.pv;
 	sys.name = site.sitename;
 	sys.online = initOnline();
@@ -707,7 +708,7 @@ function initOnline() {
 
 // 页面出错处理
 async function catchErr(err) {
-	sys.isInit = true;
+	cc().siteInit = true;
 	// master 出错时直接返回 json 错误
 	if(err.message.indexOf("no such table") < 0) return sys.ismaster ? tojson({ err: err.message, cmd: db().lastSql }) : errpage(err.message, "请求出现意外");
 	var tables = await db().table("sqlite_master").query();	// 判断数据库是不是已经初始化
@@ -742,6 +743,7 @@ async function catchErr(err) {
 	]);
 	await db().none("create index reply_topicid on reply(topicid)");
 	var msg = "您是第一次打开论坛，已成功为您初始化数据库，请刷新。";
+	delete cc().siteInit;
 	dbg().trace("数据库初始化完成，耗时：");
 	return sys.ismaster ? tojson({ msg: msg }) : errpage(msg, "系统初始化成功");
 }
