@@ -1,8 +1,7 @@
 const port = process.argv[2] ?? 3000;
 const sites = [
 	{ domain: "default", root: "wwwroot/default" },
-	{ domain: "127.34.56.78", root: "wwwroot/127.34.56.78" },
-	{ domain: "127.34.56.77", root: "wwwroot/nodejsbbs" }
+	{ domain: "127.34.56.78", root: "wwwroot/127.34.56.78" }
 ];
 const indexPages = [ "index.html", "default.asp" ];
 
@@ -156,12 +155,12 @@ function parseMultipart(site) {
 		if(ost < 0) break;
 		let item = site.buffer.slice(start, ost);
 		start = ost + boundary.length;
-		let line = item.indexOf("\r\n\r\n");
-		if(line < 0) continue;
-		let key = item.slice(0, line).toString();
+		var sperator = item.indexOf("\r\n\r\n");
+		if(sperator < 0) continue;
+		let header = item.slice(0, sperator).toString();
 		let data = item.slice(item.indexOf("\r\n\r\n") + 4, -4);
-		let [ , field, , name ] = key.split('"');
-		form[field] = { name, data, size: data.length };
+		let [ , field, , name ] = header.split('"');
+		form[field] = !name ? data.toString() : { name, data, size: data.length };
 	}
 	return form;
 }
