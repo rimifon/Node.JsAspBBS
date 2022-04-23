@@ -626,7 +626,7 @@ async function initSite() {
 			rs.uv = cc().SiteCfg.uv;
 			rs.topOnline = cc().SiteCfg.topOnline;
 			rs.topOntime = cc().SiteCfg.topOntime;
-			db().none("update site set cfg=@cfg", { cfg: tojson(rs) });
+			await db().none("update site set cfg=@cfg", { cfg: tojson(rs) });
 		}
 		return cc().SiteCfg = rs;
 	}, 9);
