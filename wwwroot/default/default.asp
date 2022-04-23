@@ -254,9 +254,9 @@ async function boot(route) {
 				if(!reply) return { err: "此评论不存在" };
 				if(reply.userid != me().userid && !await isBanZhu(reply.forumid)) return { err: "您没删除此评论的权限" };
 				if(reply.replyid == reply.minid) return await this.topicdrop(reply.topicid);
-				db().query("delete from reply where replyid=@replyid", par);
-				db().query("update topic set replynum=replynum-1 where topicid=@topicid", { topicid: reply.topicid });
-				db().query("update forums set replynum=replynum-1 where forumid=@forumid", { forumid: reply.forumid });
+				await db().query("delete from reply where replyid=@replyid", par);
+				await db().query("update topic set replynum=replynum-1 where topicid=@topicid", { topicid: reply.topicid });
+				await db().query("update forums set replynum=replynum-1 where forumid=@forumid", { forumid: reply.forumid });
 				return { msg: "评论删除成功" };
 			}
 
@@ -267,9 +267,9 @@ async function boot(route) {
 				var topic = await db().fetch("select userid, forumid, replynum from topic where topicid=@topicid", par);
 				if(!topic) return { err: "删除的话题不存在" };
 				if(me().userid != topic.userid && !await isBanZhu(topic.forumid)) return { err: "您没有权限删除这个帖子。" };
-				db().query("delete from reply where topicid=@topicid", par);
-				db().query("delete from topic where topicid=@topicid", par);
-				db().query("update forums set replynum=replynum-@replynum, topicnum=topicnum-1 where forumid=@forumid", {
+				await db().query("delete from reply where topicid=@topicid", par);
+				await db().query("delete from topic where topicid=@topicid", par);
+				await db().query("update forums set replynum=replynum-@replynum, topicnum=topicnum-1 where forumid=@forumid", {
 					replynum: topic.replynum, forumid: topic.forumid
 				});
 				return { msg: "主题删除成功" };
@@ -296,7 +296,7 @@ async function boot(route) {
 					where("a.replyid=@replyid").select("a.message, a.userid, b.forumid").fetch(par);
 				if(!reply) return { err: "您要编辑的评论不存在" };
 				if(reply.userid != me().userid && !await isBanZhu(reply.forumid)) return { err: "您没有此评论的编辑权限。" };
-				db().update("reply", { message: html(message) }, par);
+				await db().update("reply", { message: html(message) }, par);
 				return { msg: "编辑成功" };
 			}
 
@@ -308,7 +308,7 @@ async function boot(route) {
 				var topic = await db().fetch("select forumid from topic where topicid=@topicid", par);
 				if(!topic) return { err: "操作的帖子不存在" };
 				if(!await isBanZhu(topic.forumid)) return { err: "没有权限执行此操作" };
-				db().update("topic", { ding: ~~form("state") }, par);
+				await db().update("topic", { ding: ~~form("state") }, par);
 				return { msg: "操作完成" };
 			}
 
@@ -320,7 +320,7 @@ async function boot(route) {
 				var topic = await db().fetch("select forumid from topic where topicid=@topicid", par);
 				if(!topic) return { err: "操作的帖子不存在" };
 				if(!await isBanZhu(topic.forumid)) return { err: "没有权限执行此操作" };
-				db().update("topic", { jing: ~~form("state") }, par);
+				await db().update("topic", { jing: ~~form("state") }, par);
 				return { msg: "操作完成" };
 			}
 
@@ -384,10 +384,10 @@ async function boot(route) {
 				}
 
 				,BanZhuDropDoc: [ "删除斑竹", "forumid, userid", "forumid: 版块 ID", "userid: 用户 ID" ]
-				,banzhudrop: function() {
+				,banzhudrop: async function() {
 					if(~~me().roleid < 7) return { err: "没有操作权限" };
 					var par = { forumid: ~~form().forumid, userid: ~~form().userid };
-					db().query("delete from banzhu where forumid=@forumid and userid=@userid", par);
+					await db().query("delete from banzhu where forumid=@forumid and userid=@userid", par);
 					return { msg: "操作完成" };
 				}
 
@@ -405,10 +405,10 @@ async function boot(route) {
 
 				// 用户权限设置
 				,UserRoleDoc: [ "用户权限设置", "userid, roleid", "userid: int, 用户 ID", "roleid: int, 权限 ID" ]
-				,userrole: function() {
+				,userrole: async function() {
 					if(~~me().roleid < 7) return { err: "没有操作权限" };
 					var par = { userid: ~~form().userid, roleid: ~~form().roleid };
-					db().update("users", { roleid: par.roleid }, { userid: par.userid });
+					await db().update("users", { roleid: par.roleid }, { userid: par.userid });
 					return { msg: "操作完成" };
 				}
 
@@ -424,21 +424,21 @@ async function boot(route) {
 						var topic = await db().table("topic").where("topicid=@topicid").fetch(where);
 						if(!topic) return { err: "帖子不存在" };
 						// 减少原版块的贴子数和回复数
-						db().query("update forums set topicnum=topicnum-1, replynum=replynum-@replynum where forumid=@forumid", { replynum: topic.replynum, forumid: topic.forumid });
+						await db().query("update forums set topicnum=topicnum-1, replynum=replynum-@replynum where forumid=@forumid", { replynum: topic.replynum, forumid: topic.forumid });
 						// 增加新版块的贴子数和回复数
-						db().query("update forums set topicnum=topicnum+1, replynum=replynum+@replynum where forumid=@forumid", { replynum: topic.replynum, forumid: par.forumid });
+						await db().query("update forums set topicnum=topicnum+1, replynum=replynum+@replynum where forumid=@forumid", { replynum: topic.replynum, forumid: par.forumid });
 					}
-					db().update("topic", par, where);
+					await db().update("topic", par, where);
 					return { msg: "操作完成" };
 				}
 
 				,ForumSaveDoc: [ "保存板块信息", "[forumid], pid, nick, intro, sort", "点此进入添加版块界面".link("?r=admin/forum/0") ]
-				,forumsave: function() {
+				,forumsave: async function() {
 					if(~~me().roleid < 7) return { err: "没有权限" };
 					var par = { nick: form("nick"), intro: form("intro"), pid: form("pid"), sort: form("sort") };
 					var forumid = ~~form("forumid");
-					if(!forumid) return db().insert("forums", par), { msg: "创建成功" };
-					return db().update("forums", par, { forumid: forumid }), { msg: "保存成功" };
+					if(!forumid) return await db().insert("forums", par), { msg: "创建成功" };
+					return await db().update("forums", par, { forumid: forumid }), { msg: "保存成功" };
 				}
 
 				,ForumDropDoc: [ "删除版块", "forumid", "坛主可以删除空的版块" ]
@@ -447,7 +447,7 @@ async function boot(route) {
 					var par = { forumid: ~~form("forumid") };
 					if(await db().fetch("select 1 from topic where forumid=@forumid limit 0, 1", par)) return { err: "版块存在帖子，不可直接删除。" };
 					if(await db().fetch("select 1 from forums where pid=@forumid limit 0, 1", par)) return { err: "存在子版块，不可直接删除。" };
-					db().none("delete from forums where forumid=@forumid", par);
+					await db().none("delete from forums where forumid=@forumid", par);
 					return { msg: "删除成功" }
 				}
 			}
@@ -714,33 +714,33 @@ async function catchErr(err) {
 	if(tables.length) return sys.ismaster ? tojson({ err: err.message, cmd: db().lastSql }) : errpage(err.message, "请求出现意外");
 	// 初始化论坛参数
 	await db().create("site", [ "cfg varchar(4000)" ]);
-	db().insert("site", { cfg: tojson({ sitename: sys.name, topOnline: 0 }) });
+	await db().insert("site", { cfg: tojson({ sitename: sys.name, topOnline: 0 }) });
 	// 初始化用户表
 	await db().create("users", [
 		[ "userid integer", null, true ], "nick varchar(32), pass char(16), icon varchar(254), lasttime timestamp, lastip varchar(48)",
 		[ "regtime timestamp", "datetime('now', 'localtime')" ], [ "fatie integer", 0 ], [ "jifen integer", 0 ], [ "roleid integer", 1 ], "diqu varchar(16)"
 	]);
-	db().none("create unique index users_nick on users(nick)");
+	await db().none("create unique index users_nick on users(nick)");
 	// 初始化论坛表
-	db().create("forums", [
+	await db().create("forums", [
 		[ "forumid integer", null, true ], "pid integer, nick varchar(32), intro varchar(254), sort integer",
 		[ "topicnum integer", 0 ], "replyid integer", [ "replynum integer", 0 ], [ "state integer", 1 ]
 	]);
 	// 初始化版主表
 	await db().create("banzhu", [ "forumid integer, userid integer" ]);
-	db().none("create index banzhu_forumid on banzhu(forumid)");
+	await db().none("create index banzhu_forumid on banzhu(forumid)");
 	// 初始化主题表
 	await db().create("topic", [
 		[ "topicid integer", null, true ], "forumid integer, title varchar(254), userid integer, replytime timestamp, replyid integer",
 		[ "pv integer", 0 ], [ "replynum integer", 0 ], [ "posttime timestamp", "datetime('now', 'localtime')" ], [ "ding tinyint", 0 ], [ "jing tinyint", 0 ]
 	]);
-	db().none("create index topic_forumid on topic(forumid)");
+	await db().none("create index topic_forumid on topic(forumid)");
 	// 初始化评论表
 	await db().create("reply", [
 		[ "replyid integer", null, true ], "topicid integer, userid integer, ip varchar(48), message varchar(4000)",
 		[ "replytime timestamp", "datetime('now', 'localtime')" ]
 	]);
-	db().none("create index reply_topicid on reply(topicid)");
+	await db().none("create index reply_topicid on reply(topicid)");
 	var msg = "您是第一次打开论坛，已成功为您初始化数据库，请刷新。";
 	dbg().trace("数据库初始化完成，耗时：");
 	return sys.ismaster ? tojson({ msg: msg }) : errpage(msg, "系统初始化成功");
