@@ -1,8 +1,8 @@
 <!-- #include virtual="/asplib/api.asp" --><%
 async function boot(route) {
-	sys.name = "JsAspBBS";
+	sys.name = "Node.JsAspBBS";
 	sys.res = "res/bbs/";
-	sys.dbPath = "/app_data/NodeAspBBS.db";
+	sys.dbPath = "/app_data/NodeJsAspBBS.db";
 	sys.ns = "JsAspBBS";
 	// sys.apiAuth = "Admin:666666";
 	sys.onerror = catchErr;
