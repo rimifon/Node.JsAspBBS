@@ -19,17 +19,18 @@ function cc(k, f, t) {
 	}
 	try { var value = f(); }
 	catch(err) { throw err; }
-	if(value instanceof Promise) value.then(v => {
-		root[k] = { value: v, time: site.sys.sTime };
-	});
-	// 没有初始化
-	root[k] = { value, time: site.sys.sTime };
-	root[k].handler = setTimeout(() => {
-		// 定时清理缓存
-		if(!root[k]) return;
-		delete root[k];
-	}, timer);
-	return root[k].value;
+	var saveVal = value => {
+		// 没有初始化
+		root[k] = { value, time: site.sys.sTime };
+		root[k].handler = setTimeout(() => {
+			// 定时清理缓存
+			if(!root[k]) return;
+			delete root[k];
+		}, timer);
+		return value;
+	};
+	if(value instanceof Promise) return value.then(v => saveVal(v) ), value;
+	return saveVal(root[k].value);
 }
 
 function html(str) { return (str + "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
