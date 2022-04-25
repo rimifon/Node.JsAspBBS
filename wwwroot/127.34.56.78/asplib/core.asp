@@ -19,17 +19,19 @@ function cc(k, f, t) {
 	}
 	try { var value = f(); }
 	catch(err) { throw err; }
-	if(value instanceof Promise) value.then(v => {
-		root[k] = { value: v, time: site.sys.sTime };
-	});
-	// 没有初始化
-	root[k] = { value, time: site.sys.sTime };
-	root[k].handler = setTimeout(() => {
-		// 定时清理缓存
-		if(!root[k]) return;
-		delete root[k];
-	}, timer);
-	return root[k].value;
+	var saveVal = value => {
+		if(value === k.none) return;
+		// 没有初始化
+		root[k] = { value, time: site.sys.sTime };
+		root[k].handler = setTimeout(() => {
+			// 定时清理缓存
+			if(!root[k]) return;
+			delete root[k];
+		}, timer);
+		return value;
+	};
+	if(value instanceof Promise) return value.then(v => saveVal(v) ), value;
+	return saveVal(root[k].value);
 }
 
 function html(str) { return (str + "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
@@ -37,6 +39,39 @@ function tojson(obj) { return JSON.stringify(obj); }
 function fromjson(str) { return JSON.parse(str); }
 function redir(url) { IIS.redir(site, url); }
 function mappath(path) { return site.getPath(path); }
+
+function ajax(href, data, headers, ssl = new Object) {
+	if("string" == typeof headers) headers = { "Content-Type": headers };
+	headers ??= new Object;
+	let parseArg = function() {
+		if(!data) return "";
+		if("string" == typeof data) return data;
+		if(headers["Content-Type"] == "application/json") return tojson(data);
+		let arr = new Array;
+		for(let k in data) arr.push(encodeURIComponent(k) + "=" + encodeURIComponent(data[k]));
+		if(arr.length) headers["Content-Type"] = "application/x-www-form-urlencoded";
+		return arr.join("&");
+	}
+	let body = parseArg();
+	headers["Content-Length"] = Buffer.byteLength(body);
+	let { hostname, port, path, protocol } = url.parse(href);
+	port ??= protocol.toLowerCase() == "https:" ? 443 : 80;
+	let xhr = protocol.toLowerCase() == "https:" ? cache.HttpsModule ??= require("https") : http;
+	// 如果有对应的 PEM 证书，则使用证书
+	if(ssl.key) ssl.key = fs.readFileSync(site.getPath(ssl.key));
+	if(ssl.cert) ssl.cert = fs.readFileSync(site.getPath(ssl.cert));
+	if(ssl.ca) ssl.ca = fs.readFileSync(site.getPath(ssl.ca));
+	let req = xhr.request({ hostname, port, path, method: !data ? "GET" : "POST", headers, ...ssl });
+	return new Promise(resolve => {
+		req.on("error", err => resolve({ err }));
+		req.on("response", res => {
+			let buff = Buffer.alloc(0);
+			res.on("data", chunk => buff = Buffer.concat([buff, chunk]) );
+			res.on("end", () => resolve(buff.toString()));
+		});
+		req.end(body);
+	});
+}
 
 function md5(str = "a", len = 32) {
 	const crypto = cache.CryptoModule ??= require('crypto');
@@ -65,6 +100,7 @@ function db(dbPath) {
 function closeAllDb() {
 	if(!sys.db) return;
 	for(var db in sys.db) {
+		sys.db[db].commit();
 		sys.db[db].close();
 		delete sys.db[db];
 	}
@@ -82,6 +118,19 @@ function SQLiteHelper(dbPath) {
 		for(var x in args) par["@" + x] = args[x];
 		return par;
 	};
+
+	this.beginTrans = async function() {
+		if(dbo.inTransaction) return;
+		dbo.inTransaction = true;
+		await this.none("begin transaction");
+	};
+
+	this.commit = async function() {
+		if(!dbo.inTransaction) return;
+		await this.none("commit");
+		delete dbo.inTransaction;
+	};
+
 	this.query = function(sql, args) {
 		this.lastSql = { sql: sql, par: args };
 		return new Promise((resolve, reject) => {
@@ -117,9 +166,9 @@ function SQLiteHelper(dbPath) {
 		this.lastSql = { sql: sql, par: args };
 		// 执行 SQL 并返回受影响行数
 		return new Promise((resolve, reject) => {
-			dbo.run(sql, parseArg(args), function(err) {
+			dbo.run(sql, parseArg(args), err => {
 				if (err) return reject(err);
-				return resolve(this.changes);
+				this.beginTrans().then(() => resolve(this.changes));
 			});
 		});
 	};
@@ -187,9 +236,10 @@ function SQLiteHelper(dbPath) {
 		}
 		sql += keys.join(",") + ") values (" + vals.join(",") + ")";
 		this.lastSql = { sql: sql };
-		var stmt = dbo.prepare(sql);
 		// 开启事务
-		await this.none("begin transaction");
+		// await this.none("begin transaction");
+		await this.beginTrans();
+		var stmt = dbo.prepare(sql);
 		await rows.forEach(async row => {
 			var par = this.lastSql.par = new Object;
 			for(var k in row) par["@" + k] = row[k];
@@ -197,7 +247,7 @@ function SQLiteHelper(dbPath) {
 		});
 		await stmt.finalize();
 		// 提交事务
-		await this.none("commit");
+		// await this.none("commit");
 	}
 
 	this.update = function(tablename, row, parWhere) {

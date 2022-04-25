@@ -40,6 +40,39 @@ function fromjson(str) { return JSON.parse(str); }
 function redir(url) { IIS.redir(site, url); }
 function mappath(path) { return site.getPath(path); }
 
+function ajax(href, data, headers, ssl = new Object) {
+	if("string" == typeof headers) headers = { "Content-Type": headers };
+	headers ??= new Object;
+	let parseArg = function() {
+		if(!data) return "";
+		if("string" == typeof data) return data;
+		if(headers["Content-Type"] == "application/json") return tojson(data);
+		let arr = new Array;
+		for(let k in data) arr.push(encodeURIComponent(k) + "=" + encodeURIComponent(data[k]));
+		if(arr.length) headers["Content-Type"] = "application/x-www-form-urlencoded";
+		return arr.join("&");
+	}
+	let body = parseArg();
+	headers["Content-Length"] = Buffer.byteLength(body);
+	let { hostname, port, path, protocol } = url.parse(href);
+	port ??= protocol.toLowerCase() == "https:" ? 443 : 80;
+	let xhr = protocol.toLowerCase() == "https:" ? cache.HttpsModule ??= require("https") : http;
+	// 如果有对应的 PEM 证书，则使用证书
+	if(ssl.key) ssl.key = fs.readFileSync(site.getPath(ssl.key));
+	if(ssl.cert) ssl.cert = fs.readFileSync(site.getPath(ssl.cert));
+	if(ssl.ca) ssl.ca = fs.readFileSync(site.getPath(ssl.ca));
+	let req = xhr.request({ hostname, port, path, method: !data ? "GET" : "POST", headers, ...ssl });
+	return new Promise(resolve => {
+		req.on("error", err => resolve({ err }));
+		req.on("response", res => {
+			let buff = Buffer.alloc(0);
+			res.on("data", chunk => buff = Buffer.concat([buff, chunk]) );
+			res.on("end", () => resolve(buff.toString()));
+		});
+		req.end(body);
+	});
+}
+
 function md5(str = "a", len = 32) {
 	const crypto = cache.CryptoModule ??= require('crypto');
 	const hash = crypto.createHash('md5'); hash.update(str);
