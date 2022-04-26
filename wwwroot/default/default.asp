@@ -3,8 +3,7 @@ async function boot(route) {
 	sys.name = "Node.JsAspBBS";
 	sys.res = "res/bbs/";
 	sys.dbPath = "/app_data/NodeJsAspBBS.db";
-	sys.ns = "Node.JsAspBBS";
-	sys.restartPass = "restart";
+	sys.ns = "Node.JsAspBBS"
 	// sys.apiAuth = "Admin:666666";
 	sys.onerror = catchErr;
 	var roles = [ "客人", "普通会员", "认证会员", "论坛副版主", "论坛版主", "分类区版主", "论坛总版主", "论坛坛主" ];
@@ -450,14 +449,6 @@ async function boot(route) {
 					if(await db().fetch("select 1 from forums where pid=@forumid limit 0, 1", par)) return { err: "存在子版块，不可直接删除。" };
 					await db().none("delete from forums where forumid=@forumid", par);
 					return { msg: "删除成功" }
-				}
-
-				// 重启服务
-				,RestartDoc: [ "重启服务", "pass", "pass: string, 重启密码" ]
-				,restart: function() {
-					if(form("pass") != sys.restartPass) return { err: "密码错误" };
-					setTimeout(() => process.exit(0), 10);
-					return { ok: "重启命令发送成功" };
 				}
 			}
 		}
