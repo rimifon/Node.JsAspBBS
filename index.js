@@ -46,6 +46,7 @@ http.createServer((req, res) => {
 
 	// 结束请求
 	site.send = str => {
+		if(res.finished) return;
 		site.out.push(str);
 		res.writeHead(site.status || 200, { "Content-Type": site.contentType || "text/html; charset=UTF-8" });
 		res.end(site.out.join(""));
