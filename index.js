@@ -20,6 +20,7 @@ http.createServer((req, res) => {
 	var paths = pathname.split(/\.asp(?=\/)/);
 	// 服务端环境变量定义
 	site.env = {
+		...process.env,
 		"REMOTE_ADDR": req.connection.remoteAddress.replace(/^\:\:ffff\:/, ""),
 		"REQUEST_METHOD": req.method,
 		"PATH_INFO": paths.slice(1).join(".asp"),
