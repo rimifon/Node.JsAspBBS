@@ -450,6 +450,13 @@ async function boot(route) {
 					await db().none("delete from forums where forumid=@forumid", par);
 					return { msg: "删除成功" }
 				}
+
+				,RestartDoc: [ "重启服务" ]
+				,restart: function() {
+					if(~~me().roleid < 7) return { err: "没有权限" };
+					setTimeout(function() { process.exit(0); }, 10);
+					return { msg: "重启命令已发送。" };
+				}
 			}
 		}
 
