@@ -643,7 +643,6 @@ async function initSite() {
 	site.pv = -~site.pv;
 	sys.name = site.sitename;
 	sys.online = initOnline();
-	if(!ss().sessId) ss().sessId = Session.SessionID;
 	var mine = sys.online.getUser(ss().sessId);
 	sys.onlineMe = mine;
 	if(mine.ip) return site;
