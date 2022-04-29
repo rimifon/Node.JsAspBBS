@@ -716,11 +716,11 @@ function initOnline() {
 
 // 页面出错处理
 async function catchErr(err) {
-	cc().siteInit = true;
 	// master 出错时直接返回 json 错误
 	if(err.message.indexOf("no such table") < 0) return sys.ismaster ? tojson({ err: err.message, cmd: db().lastSql }) : errpage(err.message, "请求出现意外");
 	var tables = await db().table("sqlite_master").query();	// 判断数据库是不是已经初始化
 	if(tables.length) return sys.ismaster ? tojson({ err: err.message, cmd: db().lastSql }) : errpage(err.message, "请求出现意外");
+	cc().siteInit = true;
 	// 初始化论坛参数
 	await db().create("site", [ "cfg varchar(4000)" ]);
 	await db().insert("site", { cfg: tojson({ sitename: sys.name, topOnline: 0 }) });
