@@ -452,7 +452,7 @@ async function boot(route) {
 					return { msg: "删除成功" }
 				}
 
-				,RestartDoc: [ "重启服务" ]
+				,RestartDoc: [ "重启服务", "", "注意：此操作仅退出进程，未配置自动重启脚本则需慎用。" ]
 				,restart: function() {
 					if(~~me().roleid < 7) return { err: "没有权限" };
 					setTimeout(function() { process.exit(0); }, 10);
