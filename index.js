@@ -262,7 +262,7 @@ function aspHelper(site) {
 
 // 初始化 Session
 function InitSession(site) {
-	var sessKey = site.cookie = site.req.headers.cookie?.match(/ASPSESSIONID\=(\w+)/)?.[1];
+	var sessKey = site.cookie ??= site.req.headers.cookie?.match(/ASPSESSIONID\=(\w+)/)?.[1];
 	if(!sessKey) {
 		sessKey = site.cookie = new Date().valueOf().toString(36).toUpperCase() + Math.random().toString(36).slice(2).toUpperCase();
 		site.res.setHeader("Set-Cookie", `ASPSESSIONID=${sessKey}; path=/; SameSite=Lax`);
