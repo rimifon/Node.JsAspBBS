@@ -1,0 +1,74 @@
+<!doctype html><html lang="zh"><head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<meta name="viewport" content="width=device-width" />
+<title><%= sys.title %><%= sys.name %></title>
+<style type="text/css">
+img{ vertical-align: middle }
+body{ --bd: 1px solid #4d76b3; --bg: #f3f6fa }
+.flex{ display: flex }
+.flex .auto{ flex: 1 }
+.ac{ align-items: center }
+.fr{ float: right }
+.fl{ float: left }
+.tc{ text-align: center }
+.tr{ text-align: right }
+a{ color: #000; text-decoration: none }
+.ellipsis{ overflow: hidden; white-space: nowrap; text-overflow: ellipsis }
+.bd{ border: var(--bd); box-sizing: border-box }
+@media screen and (min-width: 721px) {
+.for-wap{ display: none }
+body{ margin: 0mm 7mm; font: 4mm/6mm simsun,arial }
+.mt{ margin-top: 3mm }
+.head .nav{ background-image: linear-gradient(#fff, #eee); padding: 1mm 2mm }
+.bd .cap{ background: #73a2de url(res/bbs/bg.gif) no-repeat top / 100% 1cm; padding: 2mm; color: #fff }
+.bd .main{ border-top: var(--bd) }
+.pos{ padding: 1mm 3mm; background-color: var(--bg) }
+.footer, .footer a{ color: #777 }
+}
+@media screen and (max-width: 720px) {
+.for-web{ display: none }
+.pos{ margin: 2vw 1vw; padding: 1vw 2vw; border-radius: 1vw }
+.pos a{ color: #08c }
+body{ font: 4vw/6vw arial; margin: 0mm; background: #fff }
+.mt{ margin-top: 2vw }
+.head .nav{ padding: 1vw 2vw }
+.head .nav img{ height: 4vw }
+.bd .cap{ background: #73a2de url(res/bbs/bg.gif) no-repeat top / 100% 6vw; padding: 1vw 2vw; color: #fff }
+.footer, .footer a{ color: #777; font-size: 3vw }
+.footer{ padding: 3vw 0mm }
+}
+</style></head><body>
+<div class="head">
+	<div class="bd nav">
+		<a href="." class="fr"><img src="<%= sys.res %>gohome.gif" /></a>
+		&#xbb; 欢迎您，<b><%= me().nick || "客人" %></b>：<% if(!me().isLogin) { %>
+		<a href="?r=login">登录</a> | <a href="?r=register">注册</a><% } else { %>
+		<a href="?r=logout">退出登录</a><% } %>
+		<span class="for-wap"> | <a href="weibo/">微博</a></span>
+	</div>
+</div>
+<% func(); %>
+<div class="footer tc mt">
+	<hr color="#4d76b3" size="1" width="500" class="for-web" />
+	<tt>&copy; <%= sys.sTime.getFullYear() %></tt> &nbsp; Node.JsAspBBS &nbsp;<span class="for-web"> 版本：<a href="http://228mi.com:1280/ver/NodeJsAspBBS.2204.30.zip">v1.2204.30</a>；</span>
+	<%if (me().roleid > 6) { %><a href="?r=admin/api">管理中心</a> &nbsp;<% } %>
+	执行 <%= new Date - sys.sTime %> ms</a>
+</div>
+<script type="text/javascript">
+function post(url, form, func) {
+	fetch(url, {
+		headers: { "Content-Type": "application/x-www-form-urlencoded" },
+		body: parseForm(form), method: "POST"
+	}).then(res => res.text()).then(function(res) {
+		var json;
+		try{ json = JSON.parse(res); }
+		catch(err) { json = { err: res }; }
+		func(json);
+	});
+}
+function parseForm(form) {
+	if(!form) return "";
+	var arr = new Array;
+	for(var x in form) arr.push(x + "=" + encodeURIComponent(form[x]));
+ 	return arr.join("&");
+}</script></body></html>

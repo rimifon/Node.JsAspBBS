@@ -1,0 +1,238 @@
+<style type="text/css">
+@media screen and (min-width: 721px) {
+.main .user{ width: 9cm; border-right: var(--bd); padding: 3mm 4mm }
+.main .user b{ color: #08c }
+.main .user small{ font-size: 3mm; color: #777 }
+.main .user .power{ height: 3mm; width: 2in; background-color: #def }
+.reply{ flex-direction: column }
+.main .user .power{ border-radius: 1mm }
+.main .user .power:after{ content: ''; background-color: #27f; float: left; height: 100%; width: var(--per); border-radius: 1mm }
+.reply .msg a{ color: #08c }
+.reply .msg .attach{ font-weight: bold; text-decoration: underline }
+.reply .msg img{ max-width: 100%; max-height: 100vh; object-fit: cover }
+.reply .lou { margin: 2mm; border-bottom: var(--bd); padding: 1mm }
+.reply .lou b span{ color: #900 }
+.reply .addr{ margin: 0mm 2mm; border-top: var(--bd); padding: 2mm }
+.reply .auto{ padding: 4mm 8mm }
+.odd{ background-color: var(--bg) }
+.box{ padding: 1cm }
+.form{ width: 6in; margin: 0mm auto; border-bottom: var(--bd); border-right: var(--bd) }
+.form .flex{ border-top: var(--bd) }
+.form .flex .auto{ padding: 2mm; border-left: var(--bd) }
+.form .user input{ width: 1in }
+.form .label{ width: 1in; text-align: right; background-color: var(--bg); padding: 2mm; border-left: var(--bd) }
+.form .ipt{ border-bottom: var(--bd); margin-left: 3cm; padding: 1mm 2mm }
+textarea{ background-color: #eee }
+.pager b{ color: #900; text-decoration: underline }
+.admin{ display: none }
+.addr:hover .admin{ display: block }
+.admin u{ cursor: pointer }
+.editor textarea, .code textarea{ width: 100%; height: 2in }
+}
+@media screen and (max-width: 720px) {
+.topic .odd{ background-color: var(--bg) }
+.topic .cap{ white-space: nowrap; overflow: auto }
+.topic .main, .topic .reply{ display: block }
+.topic .main{ border-top: var(--bd); padding: 2vw 2vw 0mm }
+.topic .user{ border-bottom: var(--bd); margin-bottom: 2vw }
+.topic .user .level{ float: right; font: 3vw/4vw arial; transform: translateY(-5vw); margin-bottom: -4vw; color: #08c }
+.topic .reply .lou{ float: left }
+.topic .reply .lou b{ font-weight: normal; color: #900; font-size: 3vw; margin-right: 2vw }
+.topic .reply .addr{ font-size: 3vw; border-top: var(--bd); margin: 2vw 0mm 0mm; color: #777; padding: 1vw 2vw }
+.topic .reply .msg{ word-wrap: break-word }
+.topic .reply .msg img{ max-width: 100%; max-height: 100vh }
+.topic .reply .msg a{ color: #08c }
+.topic .reply .msg .attach{ font-weight: bold; text-decoration: underline }
+.editor textarea, .code textarea{ width: 99%; height: 30vw; font: 4vw/6vw arial }
+.post{ padding-bottom: 4vw }
+.post .form{ border-top: var(--bd) }
+.post .form .flex{ border-bottom: var(--bd) }
+.post .form .label{ padding: 1vw 2vw; background-color: var(--bg); width: 20vw }
+.post .form .auto{ border-left: var(--bd); padding: 1vw 2vw }
+.post .form .auto *{ border: none; width: 100%; vertical-align: middle; outline: none; font: 4vw/6vw arial }
+.post .form .auto textarea{ height: 20vw }
+.post .form .user input{ width: 32vw }
+.post .btn input{ font: 4vw/6vw arial; padding: 1vw 4vw }
+.pager b{ color: #900; text-decoration: underline }
+}
+</style>
+<div class="pos mt bd"><a href="."><%= sys.name %></a> → <a href="?r=forum/<%= topic.forumid %>"><%= topic.nick %></a> → 浏览：帖子主题</div>
+<% if(pager.pagenum > 1) { %><div class="pager mt">分页: <%= makePager(pager, "?r=topic/" + topic.topicid + "/") %>， 共 <%= pager.pagenum %> 页</div>
+<% } %><div class="bd mt topic">
+	<div class="cap"><b class="for-web">* 帖子主题：</b><%= topic.title %></div><% rows.forEach(function(x, i) { %>
+	<!-- 帖子内容开始 -->
+	<div class="main flex<%= i % 2 ? ' odd' : '' %>">
+		<!-- 用户展示区 -->
+		<div class="user">
+			<div><b><%= x.nick %></b> <small>(ID: <%= x.userid %>)</small></div><% if(x.roleid > 1) { %>
+			<div class="for-web">头衔：<%= roles[x.roleid] %></div><% } %>
+			<div class="power bd for-web" style="--per: <%= getPer(x.jifen) %>%"></div>
+			<span class="for-web">等级：</span><span class="level"><%= jifen.getNick(x.jifen, x.roleid) %></span>
+			<div class="for-web">
+				积分：<%= x.jifen %><br />
+				发帖：<b><%= x.fatie %></b> 篇<br />
+				来自：<%= me().roleid > 2 ? x.diqu || "未设置" : "保密" %><br />
+				注册：<%= x.regtime %><br />
+				造访：<%= x.lasttime %>
+			</div>
+		</div>
+		<!-- 帖子展示区 -->
+		<div class="reply auto flex">
+			<div class="lou">
+				<b class="fr">[ 第 <span><%= lou + i %></span> 楼 ]</b>
+				<a href="#reply" class="for-web"><img src="<%= sys.res %>icon/replynow.gif" />回复</a>
+			</div>
+			<div class="auto">
+				<div class="msg"><%= fmtMsg(x.message) %></div>
+			</div>
+			<div class="addr"><% if(isBZ || me().userid == x.userid) { %>
+				<div class="admin fr">
+					<u onclick="dropReply('<%= x.replyid %>', '<%= lou + i %>')">删除</u>
+					<u onclick="editReply(parentNode, '<%= x.replyid %>')">编辑</u>
+				</div><% } %>
+				<img src="<%= sys.res %>icon/posttime.gif" /><%= x.replytime %>
+				<img src="<%= sys.res %>icon/ip.gif" />IP：<%= isBZ ? x.ip : "已设置保密" %>
+			</div>
+		</div>
+	</div><% }); %>
+</div>
+<div class="pager mt">分页: <%= makePager(pager, "?r=topic/" + topic.topicid + "/") %>， 共 <%= pager.pagenum %> 页</div>
+<!-- 快速发表主题 -->
+<div class="bd mt">
+	<div class="cap tc"><a name="reply">快速回复主题</a></div>
+	<div class="box post">
+		<div class="form"><% if(!me().isLogin) { %>
+			<div class="flex">
+				<span class="label">账号/密码</span>
+				<div class="auto user">
+					<span class="for-web">用户：</span><input name="user" placeholder="请输入用户名" />
+					<span class="for-web"><a href="?r=register">没有注册？</a>
+					密码：</span><input name="pass" type="password" placeholder="请输入登录密码" />
+				</div>
+			</div><% } %>
+			<div class="flex">
+				<span class="label">评论内容</span>
+				<div class="auto"><textarea name="message" cols="52" rows="8" placeholder="请输入评论内容"></textarea></div>
+			</div><% if(me().jifen > 49 || isBZ) { %>
+			<div class="flex">
+				<span class="label">附件或图片</span>
+				<div class="auto">
+					<input size="53" type="file" onchange="startUp(this)" />
+					<br />支持：txt|jpg|jpeg|gif|png|zip|rar
+				</div>
+			</div><% } %>
+		</div>
+		<input type="hidden" name="topicid" value="<%= topic.topicid %>" />
+		<div class="tc mt btn"><input type="button" value="发表评论" /></div>
+	</div>
+</div>
+<div class="editor hide">
+	<div><textarea></textarea></div>
+	<p class="tr">
+		<input type="button" value="退出编辑" />
+		<input type="button" value="确认提交" />
+	</p>
+</div>
+<script type="text/javascript">
+var ipt = document.querySelectorAll(".post input, .post textarea");
+ipt[ipt.length - 1].onclick = function() {
+	var data = new Object;
+	ipt.forEach(function(x) {
+		if(!x.name) return;
+		data[x.name] = x.value;
+	});
+	if("user" in data) {
+		if(!data.user) return alert("请输入用户名");
+		if(!data.pass) return alert("请输入密码");
+	}
+	if(!data.message) return alert("请输入评论内容");
+	post("?r=api/replyAdd", data, function(res) {
+		if(res.err) return alert(res.err);
+		alert(res.msg);
+		location.reload();
+	});
+};
+function dropReply(id, lou) {
+	if(!confirm("确定要删除这个" + (lou == 1 ? "帖子" : "评论") + "吗？")) return;
+	post("?r=api/replyDrop", { replyid: id }, function(res) {
+		if(res.err) return alert(res.err);
+		alert(res.msg);
+		if(lou != 1) location.reload();
+		else history.back();
+	});
+}
+
+var editor = new function() {
+	this.edit = function(ele, str, replyid) {
+		if(this.target) this.target.replaceChild(this.oldtag, tag);
+		this.target = ele.parentNode; this.oldtag = ele;
+		this.target.replaceChild(tag, ele);
+		txt[0].defaultValue = "";
+		txt[0].innerHTML = str;
+		this.replyid = replyid;
+	};
+	var tag = document.querySelector(".editor");
+	var txt = tag.querySelectorAll("textarea, input");
+	txt[1].onclick = function() {
+		me.target.replaceChild(me.oldtag, tag);
+		delete me.target; delete me.oldtag;
+	};
+	txt[2].onclick = function() {
+		post("?r=api/replyEdit", { replyid: me.replyid, message: txt[0].value }, function(res) {
+			if(res.err) return alert(res.err);
+			alert(res.msg); location.reload();
+		});
+	};
+	tag.parentNode.removeChild(tag);
+	tag.className = "editor";
+	var me = this;
+};
+
+function editReply(tag, replyid) {
+	var msg = tag.parentNode.parentNode.querySelector(".msg");
+	if(!msg) return;	// 已经在编辑状态了
+	post("?r=api/replyLoad", { replyid: replyid }, function(res) {
+		if(res.err) return alert(res.err);
+		editor.edit(msg, res.message, replyid);
+	});
+
+}
+function startUp(x) {
+	var file = x.files[0];
+	var allow = /\.(txt|jpg|jpeg|gif|png|zip|rar)$/i;
+	if(!allow.test(file.name)) return alert("不支持的文件格式");
+	if(file.size > 1024 * 1024) return alert("文件不能大于 1Mb");
+	var body = new FormData;
+	body.append("file", file);
+	fetch("?r=api/upload", { method: "POST", body: body }).then(function(res) { return res.json(); }).
+		then(function(res) {
+			if(res.err == "需要登录") return login(x);
+			if(res.err) return alert(res.err);
+			var type = /\.(jpg|gif|png)$/i.test(res.path) ? "image" : "upload";
+			var fname = file.name.replace(/\[/g, "(").replace(/\]/g, ")");
+			fname += "|"+ parseSize(file.size, "Byte,Kb,Mb,Gb".split(","));
+			ipt[ipt.length - 4].value += "[" + type + "=" + res.path + "|" + fname + "]";
+			alert("上传成功");
+		}).catch(function(err){ alert("上传异常"); });
+}
+function login(file) {
+	if(ipt[0].name != "user") return alert("请尝试登录后继续操作");
+	var data = { user: ipt[0].value, pass: ipt[1].value };
+	if(!data.user || !data.pass) return alert("用户名和密码不能为空");
+	post("?r=api/login", data, function(res) {
+		if(res.err) return alert(res.err);
+		startUp(file);	// 重新发起上传
+	});
+}
+function parseSize(num, arr) {
+	if(!arr[1]) return num + arr[0];
+	if(num < 1024) return num + arr[0];
+	num = (num / 1024).toFixed(2) - 0;
+	return arr.shift(), parseSize(num, arr);
+}
+
+function runcode(tag) {
+	var win = open("about:blank", "_blank", "");
+	win.document.write(tag.parentNode.firstChild.value);
+}
+</script>

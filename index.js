@@ -1,7 +1,8 @@
 const port = process.argv[2] ?? 3000;
 const sites = [
-	{ domain: "default", root: "wwwroot/default" },
-	{ domain: "127.34.56.78", root: "wwwroot/127.34.56.78" }
+	{ domain: "default", root: "wwwroot/bbs-sync" },		// 同步版 BBS（默认站点）
+	{ domain: "127.34.56.77", root: "wwwroot/default" },	// 异步版 BBS（http://127.34.56.77:3000）
+	{ domain: "127.34.56.78", root: "wwwroot/127.34.56.78" }	// 测试站点（http://127.34.56.78:3000）
 ];
 const indexPages = [ "index.html", "default.asp" ];
 
