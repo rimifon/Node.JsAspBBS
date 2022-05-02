@@ -8,3 +8,22 @@
 	<a href="default.asp/test" target="_blank">一个比较卡的页面</a>
 	<p>网站计数：<%= cc().pv %>，我的SessionID：<%= ss().sessId %></p>
 </div>
+<script type="text/javascript">
+function post(url, data, func) {
+	fetch(url, {
+		method: 'POST',
+		headers: {
+			'Content-Type': 'application/x-www-form-urlencoded'
+		},
+		body: JSON.stringify(data)
+	}).then(function(response) {
+		var cookies = response.headers.get('Set-Cookie');
+		console.log("headers: ", response.headers);
+		return response.json();
+	}).then(func);
+}
+
+post("http://[2409:8a50:48e:1920:a1e9:f9e9:165a:8aeb]:3000/default.asp/weibo/home", "", res => {
+	console.log("请求结果", res);
+});
+</script>
