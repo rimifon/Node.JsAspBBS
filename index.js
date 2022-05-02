@@ -83,6 +83,9 @@ const IIS = {
 		var ext = path.extname(file);
 		var mime = getMime(ext);
 		site.res.writeHead(200, { "Content-Type": mime });
+		let fileSize = fs.statSync(file).size;
+		site.res.setHeader("Content-Length", fileSize);
+		if(fileSize > 5e4) site.res.setHeader("Cache-Control", "max-age=1800");
 		fs.createReadStream(file).pipe(site.res);
 	}
 	// ASP 请求处理
