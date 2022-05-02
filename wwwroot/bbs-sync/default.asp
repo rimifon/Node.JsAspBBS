@@ -4,7 +4,6 @@ function boot(route) {
 	sys.res = "res/bbs/";
 	sys.dbPath = "/app_data/NodeJsAspBBS.db";
 	sys.ns = "Node.JsAspBBS";
-	sys.cors = "*";
 	// sys.apiAuth = "Admin:666666";
 	sys.onerror = catchErr;
 	var roles = [ "客人", "普通会员", "认证会员", "论坛副版主", "论坛版主", "分类区版主", "论坛总版主", "论坛坛主" ];
