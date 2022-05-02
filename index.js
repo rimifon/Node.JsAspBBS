@@ -12,6 +12,7 @@ const http = require("http");
 const url = require("url");
 const path = require("path");
 
+process.chdir(__dirname);
 http.createServer((req, res) => {
 	const { pathname, query } = url.parse(req.url, true);
 	const hostname = req.headers.host.replace(/\:\d+$/, "");
