@@ -101,7 +101,7 @@ const IIS = {
 			// 解析表单内容
 			site.form = parseForm(site);
 			fs.readFile(file, "utf-8", (err, code) => {
-				if(err) return outerr(err.message, 500);
+				if(err) return site.outerr(err.message, 500);
 				// 执行 ASP 脚本
 				aspParser(code, site);
 			});
