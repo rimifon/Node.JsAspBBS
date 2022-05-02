@@ -80,12 +80,14 @@ const IIS = {
 		// 判断是否 ASP
 		if(/\.asp$/i.test(site.env.URL)) return this.asp(site);
 		var file = path.join(site.host.root, site.env.URL);
-		var ext = path.extname(file);
-		var mime = getMime(ext);
-		site.res.writeHead(200, { "Content-Type": mime });
-		let fileSize = fs.statSync(file).size;
-		site.res.setHeader("Content-Length", fileSize);
-		if(fileSize > 5e4) site.res.setHeader("Cache-Control", "max-age=1800");
+		var mime = getMime(path.extname(file));
+		var fileSize = fs.statSync(file).size;
+		var headers = {
+			"Content-Type": mime,
+			"Content-Length": fileSize
+		};
+		if(fileSize > 5e4) headers["Cache-Control"] = "max-age=1800";
+		site.res.writeHead(200, headers);
 		fs.createReadStream(file).pipe(site.res);
 	}
 	// ASP 请求处理
