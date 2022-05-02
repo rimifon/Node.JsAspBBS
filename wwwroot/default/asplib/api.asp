@@ -52,6 +52,7 @@ async function apidoc(root, route, noFmt) {
 		site.res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, HEAD, OPTIONS");
 		if(sys.cors) site.res.setHeader("Access-Control-Allow-Headers", sys.cors);
 	}
+
 	if(noFmt) return rs;
 	if(rs instanceof Promise) rs = await rs;
 	return rs instanceof Object ? tojson(rs) : rs;
