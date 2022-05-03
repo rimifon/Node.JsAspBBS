@@ -1,8 +1,8 @@
 const portHttp = process.argv[2] ?? 3000;
 const portHttps = process.argv[3] ?? 4433;
 const sites = [
-	{ domain: "default", root: "wwwroot/bbs-sync", key: "ssl/localhost/key.pem", cert: "ssl/localhost/server.crt" },		// 同步版 BBS（默认站点）
-	{ domain: "127.34.56.77", root: "wwwroot/default" },	// 异步版 BBS（http://127.34.56.77:3000）
+	{ domain: "default", root: "wwwroot/default", key: "ssl/localhost/key.pem", cert: "ssl/localhost/server.crt" },		// 同步版 BBS（默认站点）
+	{ domain: "127.34.56.77", root: "wwwroot/bbs-async" },	// 异步版 BBS（http://127.34.56.77:3000）
 	{ domain: "127.34.56.78", root: "wwwroot/127.34.56.78" }	// 测试站点（http://127.34.56.78:3000）
 ];
 const indexPages = [ "index.html", "default.asp" ];

@@ -1,21 +1,22 @@
 <!-- #include virtual="/asplib/api.asp" --><%
-async function boot(route) {
+function getSite() { return site; }
+function boot(route) {
 	sys.name = "Node.JsAspBBS";
 	sys.res = "res/bbs/";
 	sys.dbPath = "/app_data/NodeJsAspBBS.db";
-	sys.ns = "Node.JsAspBBS"
+	sys.ns = "Node.JsAspBBS";
 	// sys.apiAuth = "Admin:666666";
 	sys.onerror = catchErr;
 	var roles = [ "客人", "普通会员", "认证会员", "论坛副版主", "论坛版主", "分类区版主", "论坛总版主", "论坛坛主" ];
-	let site = await initSite();
+	let site = initSite();
 	if(!site) return;
 	return apidoc({
 		// 论坛首页
-		async index() {
+		index: function() {
 			sys.online.setWeiZhi("/", "论坛首页", ss().sessId);
 			// 得到今天的帖子
-			var forums = await cc(sys.ns + "Home", async function() {
-				var rows = await db().table("forums a").where("a.pid=0 and a.state=1").
+			var forums = cc(sys.ns + "Home", function() {
+				var rows = db().table("forums a").where("a.pid=0 and a.state=1").
 					join("forums b on b.pid=a.forumid and b.state=1").
 					join("topic c on c.forumid=b.forumid and c.posttime>=datetime('now', 'localtime', 'start of day')").	// 统计各版块当天的贴子数
 					select("a.forumid as pid, b.forumid, count(c.topicid) as topicday").
@@ -25,7 +26,7 @@ async function boot(route) {
 						"a.*, b.nick, b.intro, b.topicnum, b.replynum, d.title, c.topicid, c.replytime, e.nick as zuozhe, f.nick as pnick"
 					).orderby("f.sort, f.forumid, b.sort, b.forumid").query();
 				var catas = new Array, obj = new Object, banzhu = new Object;
-				var banzhu = await db().table("banzhu a").join("users b on b.userid=a.userid").
+				var banzhu = db().table("banzhu a").join("users b on b.userid=a.userid").
 					select("a.forumid, b.userid, b.nick").query();
 				banzhu.forEach(function(x) {
 						if(!banzhu[x.forumid]) banzhu[x.forumid] = new Array;
@@ -87,14 +88,13 @@ async function boot(route) {
 		}
 
 		// 帖子列表
-		,forum: async function() {
+		,forum: function() {
 			var par = { forumid: ~~route[1] }, page = ~~route[2];
-			var forum = await db().fetch("select * from forums where forumid=@forumid and state=1 and pid>0", par);
+			var forum = db().fetch("select * from forums where forumid=@forumid and state=1 and pid>0", par);
 			if(!forum) return errpage("没有您访问的版块");
 			sys.title = forum.nick + " - ";
-			var sql = await db().table("topic").select("topicid").where("forumid=@forumid").
-				page("ding desc, ifnull(replytime, posttime) desc", 25, page, par);
-			var rows = await sql.astable("a").
+			var rows = db().table("topic").select("topicid").where("forumid=@forumid").
+				page("ding desc, ifnull(replytime, posttime) desc", 25, page, par).astable("a").
 				join("topic b on b.topicid=a.topicid").join("users c on c.userid=b.userid").join("users d on d.userid=b.replyid").
 				select("b.*, c.nick, d.nick as reply").orderby("b.ding desc, ifnull(replytime, posttime) desc").query();
 			var pager = db().pager;
@@ -112,7 +112,7 @@ async function boot(route) {
 					"点击次数：" + x.hits
 				].join("\r\n");
 			}
-			var isBZ = await isBanZhu(forum.forumid);
+			var isBZ = isBanZhu(forum.forumid);
 			var showPage = function(x) {
 				// 每页显示 12 条回复
 				if(x.replynum < 12) return "";
@@ -126,23 +126,23 @@ async function boot(route) {
 		}
 
 		// 查看帖子
-		,topic: async function() {
+		,topic: function() {
 			var par = { topicid: ~~route[1] }, page = ~~route[2];
-			var topic = await db().table("topic a").join("forums b on b.forumid=a.forumid").
+			var topic = db().table("topic a").join("forums b on b.forumid=a.forumid").
 				where("a.topicid=@topicid and b.state=1").select("a.*, b.nick").fetch(par);
 			if(!topic) return errpage("主题不存在，或暂时不可访问。");
 			sys.title = topic.title + " - ";
-			var sql = await db().table("reply").select("replyid").where("topicid=@topicid").page("replyid", 12, page, par);
-			var rows = await sql.astable("a").join("reply b on b.replyid=a.replyid").join("users c on c.userid=b.userid").
+			var rows = db().table("reply").select("replyid").where("topicid=@topicid").page("replyid", 12, page, par).
+				astable("a").join("reply b on b.replyid=a.replyid").join("users c on c.userid=b.userid").
 				select("b.*, c.nick, c.icon, c.jifen, c.fatie, c.regtime, c.lasttime, c.roleid, c.diqu").query();
 			var pager = db().pager;
 			var lou = (pager.curpage - 1) * pager.pagesize + 1;
-			await db().none("update topic set pv=pv+1 where topicid=@topicid", par);
+			db().none("update topic set pv=pv+1 where topicid=@topicid", par);
 			var jifen = jifenHelper();	// 根据积分解析称号
 			// 暂定 1000 积分 为满分
 			var getPer = function(score){ return Math.round(score * 100 / Math.max(1e3, score)); };
 			sys.online.setWeiZhi("forum/" + topic.forumid, "[" + topic.nick + "]" + topic.title, ss().sessId);
-			var isBZ = await isBanZhu(topic.forumid);
+			var isBZ =  isBanZhu(topic.forumid);
 			// if(!me().isLogin) dbg().trace(env("REMOTE_ADDR") + "在偷偷查看《" + topic.title + "》");
 			return master(function() { %><!-- #include file="views/topic.html" --><% });
 		}
@@ -152,21 +152,21 @@ async function boot(route) {
 			Memo: [ "* JsASP 论坛 API 接口", "* 发帖 +5 积分，评论 +2 积分，登录 +1 积分" ]
 
 			,RegisterDoc: [ "用户注册", "user, pass", "第一个注册的用户将自动成为论坛坛主。" ]
-			,register: async function() {
+			,register: function() {
 				// 用户名不可包含<">
 				var par = { nick: form("user") };
 				if(!par.nick) return { err: "缺少用户名" };
 				if(/[<">]/.test(par.nick)) return { err: "非法的用户名/昵称" };
-				if(await db().scalar("select userid from users where nick=@nick", par)) return { err: "此用户名已经被注册了" };
+				if(db().scalar("select userid from users where nick=@nick", par)) return { err: "此用户名已经被注册了" };
 				par.pass = md5(form("pass") || "a", 16);
 				par.lasttime = sys.sTime.toJSON();
 				par.lastip = env("REMOTE_ADDR");
-				await db().insert("users", par);
-				var uid = await db().scalar("select last_insert_rowid()");
+				db().insert("users", par);
+				var uid = db().scalar("select last_insert_rowid()");
 				// 如果新用户ID为 1，则自动更新权限为坛主
-				if(uid < 2) await db().update("users", { roleid: 7 }, { userid: 1 });
+				if(uid < 2) db().update("users", { roleid: 7 }, { userid: 1 });
 				// 自动登录
-				var user = await db().fetch("select * from users where userid=@userid", { userid: uid });
+				var user = db().fetch("select * from users where userid=@userid", { userid: uid });
 				sys.onlineMe.nick = user.nick;
 				sys.onlineMe.roleid = user.roleid;
 				me().bind(user);
@@ -175,16 +175,16 @@ async function boot(route) {
 			}
 
 			,LoginDoc: [ "登录接口", "user, pass" ]
-			,login: async function() {
+			,login: function() {
 				var par = { user: form("user") || "", pass: md5(form("pass") || "a", 16) };
 				if(!par.user) return { err: "未提供用户名" };
-				var user = await db().fetch("select * from users where nick=@user and pass=@pass", par);
+				var user = db().fetch("select * from users where nick=@user and pass=@pass", par);
 				dbg().trace(par.user + " 登录" + (!user ? "失败[登录IP: " + env("REMOTE_ADDR") + "]" : "成功"));
 				if(!user) return { err: "登录失败" };
 				user.lastip = env("REMOTE_ADDR");
 				user.lasttime = sys.sTime.toJSON();
 				user.jifen++;
-				await db().none("update users set lastip=@lastip, lasttime=@lasttime, jifen=jifen+1 where userid=@userid", { lastip: user.lastip, lasttime: user.lasttime, userid: user.userid });
+				db().none("update users set lastip=@lastip, lasttime=@lasttime, jifen=jifen+1 where userid=@userid", { lastip: user.lastip, lasttime: user.lasttime, userid: user.userid });
 				me().bind(user);
 				sys.onlineMe.nick = user.nick;
 				sys.onlineMe.roleid = user.roleid;
@@ -193,9 +193,9 @@ async function boot(route) {
 
 			// 发帖
 			,TopicAddDoc: [ "发表帖子", "forumid, title, message, [user], [pass]" ]
-			,topicadd: async function() {
+			,topicadd: function() {
 				if(form("user")) {
-					var rs = await this.login();
+					var rs = this.login();
 					if(rs.err) return rs;
 				}
 				if(!me().isLogin) return { err: "您未登录，或登录已过期，发帖失败。" };
@@ -207,14 +207,14 @@ async function boot(route) {
 				form().message = html(form().message);
 				if(form().message.length > 4000) return { err: "内容太长，请尝试减少内容。" };
 				// 插入主题表
-				await db().insert("topic", { title: form().title, forumid: forumid, userid: me().userid });
-				var topicid = await db().scalar("select last_insert_rowid()");
+				db().insert("topic", { title: form().title, forumid: forumid, userid: me().userid });
+				var topicid = db().scalar("select last_insert_rowid()");
 				// 插入评论表
-				await db().insert("reply", { topicid: topicid, userid: me().userid, ip: env("REMOTE_ADDR"), message: form().message });
-				var replyid = await db().scalar("select last_insert_rowid()");
+				db().insert("reply", { topicid: topicid, userid: me().userid, ip: env("REMOTE_ADDR"), message: form().message });
+				var replyid = db().scalar("select last_insert_rowid()");
 				// 更新发帖量
-				await db().none("update forums set topicnum=topicnum+1, replyid=@replyid where forumid=@forumid", { replyid: replyid, forumid: forumid });
-				await db().none("update users set fatie=fatie+1, jifen=jifen+5 where userid=@userid", { userid: me().userid });
+				db().none("update forums set topicnum=topicnum+1, replyid=@replyid where forumid=@forumid", { replyid: replyid, forumid: forumid });
+				db().none("update users set fatie=fatie+1, jifen=jifen+5 where userid=@userid", { userid: me().userid });
 				me().fatie++; me().jifen += 5;
 				dbg().trace(me().nick + "发表了帖子《" + form().title + "》");
 				return { msg: "发帖成功", topicid: topicid };
@@ -222,106 +222,106 @@ async function boot(route) {
 
 			// 添加评论
 			,ReplyAddDoc: [ "添加评论", "topicid, message, [user], [pass]" ]
-			,replyadd: async function() {
+			,replyadd: function() {
 				if(form("user")) {
-					var rs = await this.login();
+					var rs = this.login();
 					if(rs.err) return rs;
 				}
 				if(!me().isLogin) return { err: "您未登录，或登录已过期，发帖失败。" };
 				var par = { topicid: ~~form("topicid"), message: html(form("message")), ip: env("REMOTE_ADDR"), userid: me().userid };
 				if(!par.message.replace(/\s/g, "")) return { err: "请填写帖子内容" };
 				if(par.message.length > 4000) return { err: "内容太长，请尝试减少内容。" };
-				var topic = await db().table("topic a").join("forums b on b.forumid=a.forumid").
+				var topic = db().table("topic a").join("forums b on b.forumid=a.forumid").
 					where("a.topicid=@topicid").select("a.forumid, a.title").fetch({ topicid: par.topicid });
 				if(!topic) return { err: "回复的帖子不存在" };
-				await db().insert("reply", par);
-				var replyid = await db().scalar("select last_insert_rowid()");
-				await db().none("update forums set replynum=replynum+1, replyid=@replyid where forumid=@forumid", { replyid: replyid, forumid: topic.forumid });
-				await db().none("update topic set replynum=replynum+1, replytime=datetime('now', 'localtime'), replyid=@userid where topicid=@topicid", { userid: me().userid, topicid: par.topicid });
-				await db().none("update users set jifen=jifen+2 where userid=@userid", { userid: me().userid });
+				db().insert("reply", par);
+				var replyid = db().scalar("select last_insert_rowid()");
+				db().none("update forums set replynum=replynum+1, replyid=@replyid where forumid=@forumid", { replyid: replyid, forumid: topic.forumid });
+				db().none("update topic set replynum=replynum+1, replytime=datetime('now', 'localtime'), replyid=@userid where topicid=@topicid", { userid: me().userid, topicid: par.topicid });
+				db().none("update users set jifen=jifen+2 where userid=@userid", { userid: me().userid });
 				dbg().trace(me().nick + "评论了帖子《" + topic.title + "》");
 				me().jifen += 2; return { msg: "评论成功" };
 			}
 
 			// 删除评论
 			,ReplyDropDoc: [ "删除评论", "replyid" ]
-			,replydrop: async function() {
+			,replydrop: function() {
 				if(!me().isLogin) return { err: "您尚未登录" };
 				var par = { replyid: ~~form("replyid") };
-				var reply = await db().table("reply a").join("reply b on b.topicid=a.topicid").groupby("a.replyid").
+				var reply = db().table("reply a").join("reply b on b.topicid=a.topicid").groupby("a.replyid").
 					where("a.replyid=@replyid").select("a.replyid, min(b.replyid) as minid").astable("a").
 					join("reply b on b.replyid=a.replyid").join("topic c on c.topicid=b.topicid").
 					select("a.*, b.userid, b.topicid, c.forumid").fetch(par);
 				if(!reply) return { err: "此评论不存在" };
-				if(reply.userid != me().userid && !await isBanZhu(reply.forumid)) return { err: "您没删除此评论的权限" };
-				if(reply.replyid == reply.minid) return await this.topicdrop(reply.topicid);
-				await db().none("delete from reply where replyid=@replyid", par);
-				await db().none("update topic set replynum=replynum-1 where topicid=@topicid", { topicid: reply.topicid });
-				await db().none("update forums set replynum=replynum-1 where forumid=@forumid", { forumid: reply.forumid });
+				if(reply.userid != me().userid && !isBanZhu(reply.forumid)) return { err: "您没删除此评论的权限" };
+				if(reply.replyid == reply.minid) return this.topicdrop(reply.topicid);
+				db().none("delete from reply where replyid=@replyid", par);
+				db().none("update topic set replynum=replynum-1 where topicid=@topicid", { topicid: reply.topicid });
+				db().none("update forums set replynum=replynum-1 where forumid=@forumid", { forumid: reply.forumid });
 				return { msg: "评论删除成功" };
 			}
 
 			,TopicDropDoc: [ "删除主题", "topicid" ]
-			,topicdrop: async function(topicid) {
+			,topicdrop: function(topicid) {
 				if(!me().isLogin) return { err: "您尚未登录" };
 				var par = { topicid: topicid || ~~form().topicid };
-				var topic = await db().fetch("select userid, forumid, replynum from topic where topicid=@topicid", par);
+				var topic = db().fetch("select userid, forumid, replynum from topic where topicid=@topicid", par);
 				if(!topic) return { err: "删除的话题不存在" };
-				if(me().userid != topic.userid && !await isBanZhu(topic.forumid)) return { err: "您没有权限删除这个帖子。" };
-				await db().none("delete from reply where topicid=@topicid", par);
-				await db().none("delete from topic where topicid=@topicid", par);
-				await db().none("update forums set replynum=replynum-@replynum, topicnum=topicnum-1 where forumid=@forumid", {
+				if(me().userid != topic.userid && !isBanZhu(topic.forumid)) return { err: "您没有权限删除这个帖子。" };
+				db().none("delete from reply where topicid=@topicid", par);
+				db().none("delete from topic where topicid=@topicid", par);
+				db().none("update forums set replynum=replynum-@replynum, topicnum=topicnum-1 where forumid=@forumid", {
 					replynum: topic.replynum, forumid: topic.forumid
 				});
 				return { msg: "主题删除成功" };
 			}
 
 			,ReplyLoadDoc: [ "加载评论", "replyid", "用于编辑评论" ]
-			,replyload: async function() {
+			,replyload: function() {
 				if(!me().isLogin) return { err: "您尚未登录或登录已超时" };
 				var par = { replyid: ~~form("replyid") };
-				var reply = await db().table("reply a").join("topic b on b.topicid=a.topicid").
+				var reply = db().table("reply a").join("topic b on b.topicid=a.topicid").
 					where("a.replyid=@replyid").select("a.message, a.userid, b.forumid").fetch(par);
 				if(!reply) return { err: "您要编辑的评论不存在" };
-				if(reply.userid != me().userid && !await isBanZhu(reply.forumid)) return { err: "您没有此评论的编辑权限。" };
+				if(reply.userid != me().userid && !isBanZhu(reply.forumid)) return { err: "您没有此评论的编辑权限。" };
 				return reply;
 			}
 
 			,ReplyEditDoc: [ "编辑/保存评论", "replyid, message" ]
-			,replyedit: async function() {
+			,replyedit: function() {
 				if(!me().isLogin) return { err: "您尚未登录或登录已超时" };
 				var message = form("message") || "";
 				if(!message.replace(/\s/g, "")) return { err: "请填写评论内容" };
 				var par = { replyid: ~~form("replyid") };
-				var reply = await db().table("reply a").join("topic b on b.topicid=a.topicid").
+				var reply = db().table("reply a").join("topic b on b.topicid=a.topicid").
 					where("a.replyid=@replyid").select("a.message, a.userid, b.forumid").fetch(par);
 				if(!reply) return { err: "您要编辑的评论不存在" };
-				if(reply.userid != me().userid && !await isBanZhu(reply.forumid)) return { err: "您没有此评论的编辑权限。" };
-				await db().update("reply", { message: html(message) }, par);
+				if(reply.userid != me().userid && !isBanZhu(reply.forumid)) return { err: "您没有此评论的编辑权限。" };
+				db().update("reply", { message: html(message) }, par);
 				return { msg: "编辑成功" };
 			}
 
 			,TopicDingDoc: [ "帖子固定/取消操作", "topicid, state" ]
-			,topicding: async function() {
+			,topicding: function() {
 				if(!me().isLogin) return { err: "请登录后操作" };
 				if(me().roleid < 3) return { err: "没有权限执行此操作" };
 				var par = { topicid: ~~form("topicid") };
-				var topic = await db().fetch("select forumid from topic where topicid=@topicid", par);
+				var topic = db().fetch("select forumid from topic where topicid=@topicid", par);
 				if(!topic) return { err: "操作的帖子不存在" };
-				if(!await isBanZhu(topic.forumid)) return { err: "没有权限执行此操作" };
-				await db().update("topic", { ding: ~~form("state") }, par);
+				if(!isBanZhu(topic.forumid)) return { err: "没有权限执行此操作" };
+				db().update("topic", { ding: ~~form("state") }, par);
 				return { msg: "操作完成" };
 			}
 
 			,TopicJingDoc: [ "帖子加精/取消操作", "topicid, state" ]
-			,topicjing: async function() {
+			,topicjing: function() {
 				if(!me().isLogin) return { err: "请登录后操作" };
 				if(me().roleid < 3) return { err: "没有权限执行此操作" };
 				var par = { topicid: ~~form("topicid") };
-				var topic = await db().fetch("select forumid from topic where topicid=@topicid", par);
+				var topic = db().fetch("select forumid from topic where topicid=@topicid", par);
 				if(!topic) return { err: "操作的帖子不存在" };
-				if(!await isBanZhu(topic.forumid)) return { err: "没有权限执行此操作" };
-				await db().update("topic", { jing: ~~form("state") }, par);
+				if(!isBanZhu(topic.forumid)) return { err: "没有权限执行此操作" };
+				db().update("topic", { jing: ~~form("state") }, par);
 				return { msg: "操作完成" };
 			}
 
@@ -346,12 +346,12 @@ async function boot(route) {
 
 		// 论坛管理端
 		,admin: {
-			forum: async function() {
+			forum: function() {
 				if(~~me().roleid < 7) return errpage("您没有权限执行此操作");
 				sys.title = "编辑板块 - ";
-				var catas = await db().query("select forumid, nick from forums where pid=0 order by sort, forumid");
+				var catas = db().query("select forumid, nick from forums where pid=0 order by sort, forumid");
 				var par = { forumid: ~~route[2] };
-				var forum = par.forumid ? await db().fetch("select * from forums where forumid=@forumid", par) : { forumid: 0 };
+				var forum = par.forumid ? db().fetch("select * from forums where forumid=@forumid", par) : { forumid: 0 };
 				if(!forum) return errpage("此板块已不存在");
 				var act = function(cid, fid) { return cid == fid ? cid + '" selected="true' : cid; };
 				return master(function(){ %><!-- #include file="views/admin/forum.html" --><% });
@@ -362,93 +362,93 @@ async function boot(route) {
 				Memo: [ "管理端 API 接口 " + "[返回论坛]".link(".") ]
 
 				,SetSiteNameDoc: [ "设置网站名称", "sitename, weiboname", "sitename: 网站名称", "weiboname: 微博版式名称" ]
-				,setsitename: async function() {
+				,setsitename: function() {
 					if(~~me().roleid < 7) return { err: "没有设置权限" };
-					var site = fromjson(await db().table("site").scalar());
+					var site = fromjson(db().table("site").scalar());
 					site.sitename = form("sitename");
 					site.weiboname = form("weiboname");
-					await db().none("update site set cfg=@cfg", { cfg: tojson(site) });
+					db().none("update site set cfg=@cfg", { cfg: tojson(site) });
 					return site;
 				}
 
 				,BanZhuAddDoc: [ "添加版主", "forumid, userid", "forumid: 版块 ID", "userid: 用户 ID" ]
-				,banzhuadd: async function() {
+				,banzhuadd: function() {
 					if(~~me().roleid < 7) return { err: "没有操作权限" };
 					var par = { forumid: ~~form().forumid, userid: ~~form().userid };
-					var user = await db().table("users a").join("banzhu b on b.forumid=@forumid and b.userid=a.userid").
+					var user = db().table("users a").join("banzhu b on b.forumid=@forumid and b.userid=a.userid").
 						where("a.userid=@userid").select("a.nick, a.roleid, b.userid").fetch(par);
 					if(!user) return { err: "用户不存在" };
 					if(user.userid) return { err: "该用户已经是版主了" };
-					await db().insert("banzhu", par);
-					if(user.roleid < 4) await db().update("users", { roleid: 4 }, { userid: par.userid });
+					db().insert("banzhu", par);
+					if(user.roleid < 4) db().update("users", { roleid: 4 }, { userid: par.userid });
 					return user;
 				}
 
 				,BanZhuDropDoc: [ "删除斑竹", "forumid, userid", "forumid: 版块 ID", "userid: 用户 ID" ]
-				,banzhudrop: async function() {
+				,banzhudrop: function() {
 					if(~~me().roleid < 7) return { err: "没有操作权限" };
 					var par = { forumid: ~~form().forumid, userid: ~~form().userid };
-					await db().none("delete from banzhu where forumid=@forumid and userid=@userid", par);
+					db().none("delete from banzhu where forumid=@forumid and userid=@userid", par);
 					return { msg: "操作完成" };
 				}
 
 				,UserQueryDoc: [ "用户查询", "[user], page", "user 可以为 userid，也可以为用户昵称" ]
-				,userquery: async function() {
-					var users = await db().table("users"), par = new Object, page = ~~form("page") || 1;
+				,userquery: function() {
+					var users = db().table("users"), par = new Object, page = ~~form("page") || 1;
 					if(form("user")) {
 						par.user = form("user");
 						users.where(isNaN(par.user) ? "instr(lower(nick), lower(@user))>0" : "userid=@user");
 					}
-					await users.page("userid desc", 10, page, par);
-					var res = await users.select("userid, nick, jifen, fatie, roleid, regtime, lasttime").query();
+					users.page("userid desc", 10, page, par);
+					var res = users.select("userid, nick, jifen, fatie, roleid, regtime, lasttime").query();
 					return { list: res, pager: db().pager };
 				}
 
 				// 用户权限设置
 				,UserRoleDoc: [ "用户权限设置", "userid, roleid", "userid: int, 用户 ID", "roleid: int, 权限 ID" ]
-				,userrole: async function() {
+				,userrole: function() {
 					if(~~me().roleid < 7) return { err: "没有操作权限" };
 					var par = { userid: ~~form().userid, roleid: ~~form().roleid };
-					await db().update("users", { roleid: par.roleid }, { userid: par.userid });
+					db().update("users", { roleid: par.roleid }, { userid: par.userid });
 					return { msg: "操作完成" };
 				}
 
 				// 编辑帖子标题
 				,EditTitleDoc: [ "编辑帖子标题，或转移帖子到其他版块", "topicid, title, forumid", "topicid: int, 帖子 ID", "title: string, 标题", "forumid: int, 版块 ID" ]
-				,edittitle: async function() {
+				,edittitle: function() {
 					if(~~me().roleid < 7) return { err: "没有操作权限" };
 					var par = new Object, where = { topicid: ~~form("topicid") };
 					if(form("title")) par.title = form("title");
 					if(form("forumid")) par.forumid = ~~form("forumid");
 					if(!par.title && !par.forumid) return { err: "没有操作内容" };
 					if(par.forumid) {
-						var topic = await db().table("topic").where("topicid=@topicid").fetch(where);
+						var topic = db().table("topic").where("topicid=@topicid").fetch(where);
 						if(!topic) return { err: "帖子不存在" };
 						// 减少原版块的贴子数和回复数
-						await db().none("update forums set topicnum=topicnum-1, replynum=replynum-@replynum where forumid=@forumid", { replynum: topic.replynum, forumid: topic.forumid });
+						db().none("update forums set topicnum=topicnum-1, replynum=replynum-@replynum where forumid=@forumid", { replynum: topic.replynum, forumid: topic.forumid });
 						// 增加新版块的贴子数和回复数
-						await db().none("update forums set topicnum=topicnum+1, replynum=replynum+@replynum where forumid=@forumid", { replynum: topic.replynum, forumid: par.forumid });
+						db().none("update forums set topicnum=topicnum+1, replynum=replynum+@replynum where forumid=@forumid", { replynum: topic.replynum, forumid: par.forumid });
 					}
-					await db().update("topic", par, where);
+					db().update("topic", par, where);
 					return { msg: "操作完成" };
 				}
 
 				,ForumSaveDoc: [ "保存板块信息", "[forumid], pid, nick, intro, sort", "点此进入添加版块界面".link("?r=admin/forum/0") ]
-				,forumsave: async function() {
+				,forumsave: function() {
 					if(~~me().roleid < 7) return { err: "没有权限" };
 					var par = { nick: form("nick"), intro: form("intro"), pid: form("pid"), sort: form("sort") };
 					var forumid = ~~form("forumid");
-					if(!forumid) return await db().insert("forums", par), { msg: "创建成功" };
-					return await db().update("forums", par, { forumid: forumid }), { msg: "保存成功" };
+					if(!forumid) return db().insert("forums", par), { msg: "创建成功" };
+					return db().update("forums", par, { forumid: forumid }), { msg: "保存成功" };
 				}
 
 				,ForumDropDoc: [ "删除版块", "forumid", "坛主可以删除空的版块" ]
-				,forumdrop: async function() {
+				,forumdrop: function() {
 					if(~~me().roleid < 7) return { err: "没有权限" };
 					var par = { forumid: ~~form("forumid") };
-					if(await db().fetch("select 1 from topic where forumid=@forumid limit 0, 1", par)) return { err: "版块存在帖子，不可直接删除。" };
-					if(await db().fetch("select 1 from forums where pid=@forumid limit 0, 1", par)) return { err: "存在子版块，不可直接删除。" };
-					await db().none("delete from forums where forumid=@forumid", par);
+					if(db().fetch("select 1 from topic where forumid=@forumid limit 0, 1", par)) return { err: "版块存在帖子，不可直接删除。" };
+					if(db().fetch("select 1 from forums where pid=@forumid limit 0, 1", par)) return { err: "存在子版块，不可直接删除。" };
+					db().none("delete from forums where forumid=@forumid", par);
 					return { msg: "删除成功" }
 				}
 
@@ -467,28 +467,28 @@ async function boot(route) {
 
 			// 微博首页
 			,HomeDoc: [ "微博首页" ]
-			,home: async function() {
+			,home: function() {
 				sys.ismaster = true;
 				// 获取论坛版块名称列表
-				var forums = await db().table("forums a").join("forums b on b.forumid=a.pid").
+				var forums = db().table("forums a").join("forums b on b.forumid=a.pid").
 					select("a.forumid, a.pid, a.nick").where("a.pid>0").orderby("b.sort, a.sort").query();
 				// 获取用户数和帖子数
-				var total = await cc(sys.ns + ".weibo.total", async function() {
+				var total = cc(sys.ns + ".weibo.total", function() {
 					var rs = new Object;
-					rs.users = await db().scalar("select count(0) from users");
-					rs.topics = await db().table("forums").select("sum(topicnum)").scalar();
+					rs.users = db().scalar("select count(0) from users");
+					rs.topics = db().table("forums").select("sum(topicnum)").scalar();
 					return rs;
 				}, 30);
-				var list = await this.topiclist();
+				var list = this.topiclist();
 				return { forums: forums, topics: list.topics, sitename: site.weiboname || sys.name, total: total, dings: list.dings };
 			}
 
 			// 论坛帖子列表
 			,TopicListDoc: [ "论坛帖子列表", "forumid, lastid", "forumid: int, 版块ID", "lastid: int, 可以为空", "第 11 条为下页第一条" ]
-			,topiclist: async function() {
+			,topiclist: function() {
 				sys.online.setWeiZhi("/weibo", "查看微博", ss().sessId);
 				var forumid = ~~form("forumid"), lastid = ~~form("lastid");
-				var query = await db().table("topic"), where = new Array, par = new Object, where2 = new Array;
+				var query = db().table("topic"), where = new Array, par = new Object, where2 = new Array;
 				if(forumid) {
 					where.push("forumid=@forumid");
 					where2.push("forumid=@forumid");
@@ -496,14 +496,14 @@ async function boot(route) {
 				}
 				where2.push("ding=1");
 				// 不存在分页时查询置顶内容
-				var dings = !lastid ? await db().table("topic").where(where2.join(" and ")).select("topicid, title").orderby("topicid desc").limit(0, 4).query(par) : [];
+				var dings = !lastid ? db().table("topic").where(where2.join(" and ")).select("topicid, title").orderby("topicid desc").limit(0, 4).query(par) : [];
 				if(lastid) {
 					where.push("topicid<=@lastid");
 					par.lastid = lastid;
 				}
 				if(where.length) query.where(where.join(" and "));
 				// 统计帖子评论数
-				var topics = await query.orderby("topicid desc").select("topicid").limit(0, 11).astable("a").
+				var topics = query.orderby("topicid desc").select("topicid").limit(0, 11).astable("a").
 					// 取第一条评论为帖子内容
 					join("reply b on b.topicid=a.topicid").groupby("a.topicid").select("a.topicid, min(b.replyid) as replyid").
 					astable("a").join("topic b on b.topicid=a.topicid").join("users c on c.userid=b.userid").
@@ -514,10 +514,10 @@ async function boot(route) {
 
 			// 评论列表
 			,RepliesDoc: [ "评论列表", "topicid, firstid, [lastid]", "topicid: int, 帖子ID", "firstid: int, 排除回复的id", "lastid: int, 可以为空", "第 11 条为下页第一条" ]
-			,replies: async function() {
+			,replies: function() {
 				var par = { topicid: ~~form("topicid") };
 				// 获取主题名称，板块名称，登记用户当前位置，并且增加主题 PV
-				var topic = await db().table("topic a").join("forums b on b.forumid=a.forumid").
+				var topic = db().table("topic a").join("forums b on b.forumid=a.forumid").
 					select("a.topicid, a.forumid, a.title, b.nick").
 					where("a.topicid=@topicid").fetch(par);
 				if(!topic) return { err: "主题不存在" };
@@ -528,7 +528,7 @@ async function boot(route) {
 				par.firstid = ~~form("firstid");
 				var lastid = ~~form("lastid");
 				if(lastid) { where += " and a.replyid<=@lastid"; par.lastid = lastid; }
-				var replies = await db().table("reply a").join("users b on b.userid=a.userid").
+				var replies = db().table("reply a").join("users b on b.userid=a.userid").
 					where(where).select("a.replyid, a.message, a.replytime, b.nick, b.icon").
 					orderby("a.replyid desc").limit(0, 11).query(par);
 				return { replies: replies, userid: ~~me().userid };
@@ -611,23 +611,23 @@ function jifenHelper() {
 	return { getNick: getNick };
 }
 
-async function isBanZhu(forumid, userid) {
+function isBanZhu(forumid, userid) {
 	if(!me().isLogin) return false;
 	// 判断是否斑竹
 	if(me().roleid < 4) return false;
 	if(me().roleid > 5) return true;
-	return await db().scalar(
+	return db().scalar(
 		"select 1 from banzhu where forumid=@forumid and userid=@userid",
 		{ forumid: forumid, userid: userid || me().userid }
 	) == 1;
 }
 
-async function initSite() {
+function initSite() {
 	// 从数据库加载网站配置
-	let site = await cc("Site", async function() {
+	let site = cc("Site", function() {
 		if(cc().siteInit) return errpage("网站正在初始化，请稍候再试");
-		try { var rs = await db().scalar("select * from site"); }
-		catch(err) { return await catchErr(err); }
+		try { var rs = db().scalar("select * from site"); }
+		catch(err) { return catchErr(err); }
 		rs = fromjson(rs);
 		if(cc().SiteCfg) {
 			// 每 9 秒同步一次 PV 值到数据库
@@ -635,7 +635,7 @@ async function initSite() {
 			rs.uv = cc().SiteCfg.uv;
 			rs.topOnline = cc().SiteCfg.topOnline;
 			rs.topOntime = cc().SiteCfg.topOntime;
-			await db().none("update site set cfg=@cfg", { cfg: tojson(rs) });
+			db().none("update site set cfg=@cfg", { cfg: tojson(rs) });
 		}
 		return cc().SiteCfg = rs;
 	}, 9);
@@ -714,41 +714,41 @@ function initOnline() {
 }
 
 // 页面出错处理
-async function catchErr(err) {
+function catchErr(err) {
 	// master 出错时直接返回 json 错误
 	if(err.message.indexOf("no such table") < 0) return sys.ismaster ? tojson({ err: err.message, cmd: db().lastSql }) : errpage(err.message, "请求出现意外");
-	var tables = await db().table("sqlite_master").query();	// 判断数据库是不是已经初始化
+	var tables = db().table("sqlite_master").query();	// 判断数据库是不是已经初始化
 	if(tables.length) return sys.ismaster ? tojson({ err: err.message, cmd: db().lastSql }) : errpage(err.message, "请求出现意外");
 	cc().siteInit = true;
 	// 初始化论坛参数
-	await db().create("site", [ "cfg varchar(4000)" ]);
-	await db().insert("site", { cfg: tojson({ sitename: sys.name, topOnline: 0 }) });
+	db().create("site", [ "cfg varchar(4000)" ]);
+	db().insert("site", { cfg: tojson({ sitename: sys.name, topOnline: 0 }) });
 	// 初始化用户表
-	await db().create("users", [
+	db().create("users", [
 		[ "userid integer", null, true ], "nick varchar(32), pass char(16), icon varchar(254), lasttime timestamp, lastip varchar(48)",
 		[ "regtime timestamp", "datetime('now', 'localtime')" ], [ "fatie integer", 0 ], [ "jifen integer", 0 ], [ "roleid integer", 1 ], "diqu varchar(16)"
 	]);
-	await db().none("create unique index users_nick on users(nick)");
+	db().none("create unique index users_nick on users(nick)");
 	// 初始化论坛表
-	await db().create("forums", [
+	db().create("forums", [
 		[ "forumid integer", null, true ], "pid integer, nick varchar(32), intro varchar(254), sort integer",
 		[ "topicnum integer", 0 ], "replyid integer", [ "replynum integer", 0 ], [ "state integer", 1 ]
 	]);
 	// 初始化版主表
-	await db().create("banzhu", [ "forumid integer, userid integer" ]);
-	await db().none("create index banzhu_forumid on banzhu(forumid)");
+	db().create("banzhu", [ "forumid integer, userid integer" ]);
+	db().none("create index banzhu_forumid on banzhu(forumid)");
 	// 初始化主题表
-	await db().create("topic", [
+	db().create("topic", [
 		[ "topicid integer", null, true ], "forumid integer, title varchar(254), userid integer, replytime timestamp, replyid integer",
 		[ "pv integer", 0 ], [ "replynum integer", 0 ], [ "posttime timestamp", "datetime('now', 'localtime')" ], [ "ding tinyint", 0 ], [ "jing tinyint", 0 ]
 	]);
-	await db().none("create index topic_forumid on topic(forumid)");
+	 db().none("create index topic_forumid on topic(forumid)");
 	// 初始化评论表
-	await db().create("reply", [
+	db().create("reply", [
 		[ "replyid integer", null, true ], "topicid integer, userid integer, ip varchar(48), message varchar(4000)",
 		[ "replytime timestamp", "datetime('now', 'localtime')" ]
 	]);
-	await db().none("create index reply_topicid on reply(topicid)");
+	db().none("create index reply_topicid on reply(topicid)");
 	var msg = "您是第一次打开论坛，已成功为您初始化数据库，请刷新。";
 	delete cc().siteInit;
 	dbg().trace("数据库初始化完成，耗时：");
