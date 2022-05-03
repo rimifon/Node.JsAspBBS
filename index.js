@@ -66,15 +66,15 @@ console.log("HTTP server running at " + portHttp);
 
 fs.stat("ssl/default/key.pem", err => {
 	if(err) return;	// 没有默认 SSL 证书，不启用 HTTPS 服务
-	let pemKey = fs.readFileSync("ssl/default/key.pem");
-	let pemCrt = fs.readFileSync("ssl/default/server.crt");
+	let pemKey = fs.readFileSync("ssl/default/key.pem", "utf-8");
+	let pemCrt = fs.readFileSync("ssl/default/server.crt", "utf-8");
 	var ssl = {
 		SNICallback: (domain, cb) => {
 			// 域名访问时才会触发 SNI
 			var host = sites.find(s => s.domain == domain);
 			if(!host) host = sites[0];
-			var key = !host.key ? pemKey : host.pemKey ??= fs.readFileSync(host.key);
-			var cert = !host.cert ? pemCrt : host.pemCrt ??= fs.readFileSync(host.cert);
+			var key = !host.key ? pemKey : host.pemKey ??= fs.readFileSync(host.key, "utf-8");
+			var cert = !host.cert ? pemCrt : host.pemCrt ??= fs.readFileSync(host.cert, "utf-8");
 			return cb(null, tls.createSecureContext({ key, cert }));
 		}, key: pemKey, cert: pemCrt
 	};
