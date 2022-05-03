@@ -26,7 +26,7 @@ function boot(route) {
 			return master(function() { %><!-- #include file="views/test.html" --><% });
 		}
 		,include() {
-			return include("views/test.html", { rs : { msg: "你好，其实并不卡", now: sys.sTime }, tojson });
+			include("views/test.html", { rs : { msg: "你好，其实并不卡", now: sys.sTime }, tojson });
 		}
 	}, route);
 

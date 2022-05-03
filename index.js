@@ -206,39 +206,39 @@ function parseUrlEncoded(site) {
 function aspParser(code, site, notRun = false, args = new Object) {
 	site.sys ??= { sTime: new Date };
 	var sys = site.sys;
-	sys.domain = site.host.domain;
-	sys.ns = sys.domain + "|" + path.dirname(site.env.URL) + "|";
-	// inlude 方法加载时需要重新解析 #include 指令
-	if(notRun) code = includeFile(code, site);
-	var reg = /<%[\s\S]+?%>/g;
-	// 纯html代码，纯asp代码，组合代码，输出缓冲
-	var arr1 = code.split(reg), arr2 = code.match(reg) || new Array, arr3 = new Array, arr4 = site.out;
-	// 先将参数定义写入组合代码
-	var loadArg = k => args[k];
-	for(var k in args) arr3.push(`var ${k} = loadArg("${k}");`);
-	var blockWrite = i => arr4.push(arr1[i]);	// 写入缓冲
-	arr1.forEach((v, i) => {
-		arr3.push("blockWrite(" + i + ");");
-		var js = arr2[i]?.slice(2, -2).replace(/(^\s+|\s+$)/g, "");
-		if(!js) return;
-		if(js.charAt(0) == "=") js = "arr4.push(" + js.slice(1) + ");";
-		arr3.push(js);
-	});
-	const { qstr, form, env, include } = aspHelper(site);
-	var echo = str => arr4.push(str);
-	var runAsp = async function() {
-		if("function" != typeof boot) return site.send();
-		// 同时支持 r 路由和 path_info 路由
-		var route = qstr("r") ? ("/" + qstr("r")).split("/") : site.env.PATH_INFO.split("/");
-		route.shift(); try { var rs = await boot(route);
-		if(rs instanceof Object) rs = JSON.stringify(rs);
-		site.send(rs); } catch(e){ site.outerr(e.message); }
-		finally{ closeAllDb(); dbg().appendLog(); }
-	};
-	try {
+	sys.ns = path.dirname(site.env.URL) + "|";
+	function compileAsp() {
+		// inlude 方法加载时需要重新解析 #include 指令
+		if(notRun) code = includeFile(code, site);
+		var reg = /<%[\s\S]+?%>/g;
+		// 纯html代码，纯asp代码，组合代码，输出缓冲
+		var arr1 = code.split(reg), arr2 = code.match(reg) || new Array, arr3 = new Array, arr4 = site.out;
+		// 先将参数定义写入组合代码
+		var loadArg = k => args[k];
+		for(var k in args) arr3.push(`var ${k} = loadArg("${k}");`);
+		var blockWrite = i => arr4.push(arr1[i]);	// 写入缓冲
+		arr1.forEach((v, i) => {
+			arr3.push("blockWrite(" + i + ");");
+			var js = arr2[i]?.slice(2, -2).replace(/(^\s+|\s+$)/g, "");
+			if(!js) return;
+			if(js.charAt(0) == "=") js = "arr4.push(" + js.slice(1) + ");";
+			arr3.push(js);
+		});
+		const { qstr, form, env, include } = aspHelper(site);
+		var echo = str => arr4.push(str);
+		var runAsp = async function() {
+			if("function" != typeof boot) return site.send();
+			// 同时支持 r 路由和 path_info 路由
+			var route = qstr("r") ? ("/" + qstr("r")).split("/") : site.env.PATH_INFO.split("/");
+			route.shift(); try { var rs = await boot(route);
+			if(rs instanceof Object) rs = JSON.stringify(rs);
+			site.send(rs); } catch(e){ site.outerr(e.message); }
+			finally{ closeAllDb(); dbg().appendLog(); }
+		};
 		if(!notRun) arr3.push("runAsp();");
 		eval(arr3.join("\r\n"));
-	} catch(err) {
+	}
+	try { compileAsp(); } catch(err) {
 		return site.outerr(JSON.stringify({
 			name: err.name,
 			file: site.env.URL,
@@ -256,7 +256,7 @@ function takeAspCode(site, file) {
 		// 判断每个文件是否有更新
 		for(var x in files) {
 			// 实际文件更新时间，如果文件已被删除，则认为已更新
-			var mtime = fs.existsSync(x) ? fs.statSync(x).mtime : new Date;
+			var mtime = fs.existsSync(x) ? fs.statSync(x).mtime : 1;
 			if(files[x] != mtime - 0) { notModify = false; break; }
 		}
 		// 没有更新，直接返回 code
@@ -265,7 +265,7 @@ function takeAspCode(site, file) {
 	IIS.ASP[file] = { files: new Object };
 	IIS.ASP[file].files[file] = fs.statSync(file).mtime - 0;
 	// 读取文件
-	return IIS.ASP[file].code = includeFile(fs.readFileSync(file, "utf8"), site, IIS.ASP[file].files);
+	return IIS.ASP[file].code = includeFile(fs.readFileSync(file, "utf-8"), site, IIS.ASP[file].files);
 }
 
 // 处理包含指令
