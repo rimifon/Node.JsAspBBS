@@ -56,7 +56,7 @@ function ajax(href, data, headers, ssl = new Object) {
 	headers["Content-Length"] = Buffer.byteLength(body);
 	let { hostname, port, path, protocol } = url.parse(href);
 	port ??= protocol.toLowerCase() == "https:" ? 443 : 80;
-	let xhr = protocol.toLowerCase() == "https:" ? cache.HttpsModule ??= require("https") : http;
+	let xhr = protocol.toLowerCase() == "https:" ? https : http;
 	// 如果有对应的 PEM 证书，则使用证书
 	if(ssl.key) ssl.key = fs.readFileSync(site.getPath(ssl.key));
 	if(ssl.cert) ssl.cert = fs.readFileSync(site.getPath(ssl.cert));
