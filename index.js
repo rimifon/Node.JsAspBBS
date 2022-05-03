@@ -107,7 +107,7 @@ const IIS = {
 			"Content-Type": mime,
 			"Content-Length": fileSize
 		};
-		if(fileSize > 5e4) headers["Cache-Control"] = "max-age=1800";
+		headers["Cache-Control"] = "max-age=1800";
 		site.res.writeHead(200, headers);
 		fs.createReadStream(file).pipe(site.res);
 	}
