@@ -47,6 +47,7 @@ const app = (req, res) => {
 	// 判断是目录还是文件
 	fs.stat(path.join(site.host.root, site.env.URL), (err, stats) => {
 		if(err) return site.outerr(err.message, 404);
+		if(/[\\\/]\.+[\\\/]/.test(site.env.URL)) return site.outerr("403 Forbidden", 403);
 		return stats.isFile() ? IIS.file(site) : IIS.folder(site);
 	});
 
