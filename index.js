@@ -120,11 +120,7 @@ const IIS = {
 			site.body = site.buffer.toString();
 			// 解析表单内容
 			site.form = parseForm(site);
-			fs.readFile(file, "utf-8", (err, code) => {
-				if(err) return site.outerr(err.message, 500);
-				// 执行 ASP 脚本
-				aspParser(code, site);
-			});
+			aspParser(takeAspCode(site, file), site);
 		});
 	}
 	// 重定向处理
@@ -212,7 +208,8 @@ function aspParser(code, site, notRun = false, args = new Object) {
 	var sys = site.sys;
 	sys.domain = site.host.domain;
 	sys.ns = sys.domain + "|" + path.dirname(site.env.URL) + "|";
-	code = includeFile(code, site);
+	// inlude 方法加载时需要重新解析 #include 指令
+	if(notRun) code = includeFile(code, site);
 	var reg = /<%[\s\S]+?%>/g;
 	// 纯html代码，纯asp代码，组合代码，输出缓冲
 	var arr1 = code.split(reg), arr2 = code.match(reg) || new Array, arr3 = new Array, arr4 = site.out;
@@ -237,7 +234,8 @@ function aspParser(code, site, notRun = false, args = new Object) {
 		if(rs instanceof Object) rs = JSON.stringify(rs);
 		site.send(rs); } catch(e){ site.outerr(e.message); }
 		finally{ closeAllDb(); dbg().appendLog(); }
-	}; try {
+	};
+	try {
 		if(!notRun) arr3.push("runAsp();");
 		eval(arr3.join("\r\n"));
 	} catch(err) {
@@ -250,8 +248,28 @@ function aspParser(code, site, notRun = false, args = new Object) {
 	}
 }
 
+// 加载 ASP 代码，减少重复读取
+function takeAspCode(site, file) {
+	IIS.ASP ??= new Object;
+	if(IIS.ASP[file]) {
+		let files = IIS.ASP[file].files, notModify = true;
+		// 判断每个文件是否有更新
+		for(var x in files) {
+			// 实际文件更新时间，如果文件已被删除，则认为已更新
+			var mtime = fs.existsSync(x) ? fs.statSync(x).mtime : new Date;
+			if(files[x] != mtime - 0) { notModify = false; break; }
+		}
+		// 没有更新，直接返回 code
+		if(notModify) return IIS.ASP[file].code;
+	}
+	IIS.ASP[file] = { files: new Object };
+	IIS.ASP[file].files[file] = fs.statSync(file).mtime - 0;
+	// 读取文件
+	return IIS.ASP[file].code = includeFile(fs.readFileSync(file, "utf8"), site, IIS.ASP[file].files);
+}
+
 // 处理包含指令
-function includeFile(code, site) {
+function includeFile(code, site, files = new Object) {
 	var reg = /<\!\-\- #include (file|virtual)\="(.+?)" \-\->/i;
 	if(!reg.test(code)) return code;
 	var pwd = path.dirname(path.join(site.host.root, site.env.URL));
@@ -262,7 +280,9 @@ function includeFile(code, site) {
 		return fs.existsSync(file) ? file : path.join(pwd, RegExp.$2);
 	};
 	var file = RegExp.$1.toLocaleLowerCase() == "file" ? getFilePath() : path.join(site.host.root, RegExp.$2);
-	var text = fs.existsSync(file) ? fs.readFileSync(file, "utf-8") : "";
+	var fileExists = fs.existsSync(file);
+	if(fileExists) files[file] = fs.statSync(file).mtime - 0;
+	var text = fileExists ? fs.readFileSync(file, "utf-8") : "";
 	site.cwd = path.dirname(file);	//	更新当前目录
 	// 再次包含
 	return includeFile(code.replace(reg, text), site);

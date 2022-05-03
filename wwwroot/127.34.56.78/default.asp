@@ -25,6 +25,9 @@ function boot(route) {
 			var rs = await this.sub.async();
 			return master(function() { %><!-- #include file="views/test.html" --><% });
 		}
+		,include() {
+			return include("views/test.html", { rs : { msg: "你好，其实并不卡", now: sys.sTime }, tojson });
+		}
 	}, route);
 
 	function master(func) {
