@@ -229,8 +229,8 @@ function aspParser(code, site, notRun = false, args = new Object) {
 		var runAsp = async function() {
 			if("function" != typeof boot) return site.send();
 			// 同时支持 r 路由和 path_info 路由
-			var route = qstr("r") ? ("/" + qstr("r")).split("/") : site.env.PATH_INFO.split("/");
-			route.shift(); try { var rs = await boot(route);
+			var route = qstr("r") ? qstr("r").split("/") : site.env.PATH_INFO.slice(1).split("/");
+			try { var rs = await boot(route);
 			if(rs instanceof Object) rs = JSON.stringify(rs);
 			site.send(rs); } catch(e){ site.outerr(e.message); }
 			finally{ closeAllDb(); dbg().appendLog(); }
