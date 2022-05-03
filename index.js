@@ -207,7 +207,8 @@ function aspParser(code, site, notRun = false, args = new Object) {
 	site.sys ??= { sTime: new Date };
 	var sys = site.sys;
 	sys.ns = path.dirname(site.env.URL) + "|";
-	function compileAsp() {
+	function compileAsp(site) {
+		if(!notRun && site.asp.func) return site.asp.func;
 		// inlude 方法加载时需要重新解析 #include 指令
 		if(notRun) code = includeFile(code, site);
 		var reg = /<%[\s\S]+?%>/g;
@@ -224,21 +225,27 @@ function aspParser(code, site, notRun = false, args = new Object) {
 			if(js.charAt(0) == "=") js = "arr4.push(" + js.slice(1) + ");";
 			arr3.push(js);
 		});
-		const { qstr, form, env, include } = aspHelper(site);
 		var echo = str => arr4.push(str);
-		var runAsp = async function() {
-			if("function" != typeof boot) return site.send();
+		var runAsp = async function(arg, qstr, site) {
+			if("function" != typeof arg.boot) return site.send();
 			// 同时支持 r 路由和 path_info 路由
 			var route = qstr("r") ? qstr("r").split("/") : site.env.PATH_INFO.slice(1).split("/");
-			try { var rs = await boot(route);
+			try { var rs = await arg.boot(route);
 			if(rs instanceof Object) rs = JSON.stringify(rs);
 			site.send(rs); } catch(e){ site.outerr(e.message); }
-			finally{ closeAllDb(); dbg().appendLog(); }
+			finally{ arg.closeAllDb(); arg.dbg().appendLog(); }
 		};
-		if(!notRun) arr3.push("runAsp();");
-		eval(arr3.join("\r\n"));
+		arr3.push("arr4 = site.out;");
+		arr3.push(`return { closeAllDb, dbg, boot: "function" == typeof boot ? boot : 0 };`);
+		eval("var func = (site, sys, qstr, form, env, include) => { " + arr3.join("\r\n") + " };");
+		var compiledFunc = function(site, sys) {
+			const { qstr, form, env, include } = aspHelper(site);
+			var arg = func(site, sys, qstr, form, env, include); if(!notRun) runAsp(arg, qstr, site);
+		};
+		if(!notRun) site.asp.func = compiledFunc;
+		return compiledFunc;
 	}
-	try { compileAsp(); } catch(err) {
+	try { compileAsp(site)(site, sys); } catch(err) {
 		return site.outerr(JSON.stringify({
 			name: err.name,
 			file: site.env.URL,
@@ -260,9 +267,10 @@ function takeAspCode(site, file) {
 			if(files[x] != mtime - 0) { notModify = false; break; }
 		}
 		// 没有更新，直接返回 code
+		site.asp = IIS.ASP[file];
 		if(notModify) return IIS.ASP[file].code;
 	}
-	IIS.ASP[file] = { files: new Object };
+	site.asp = IIS.ASP[file] = { files: new Object };
 	IIS.ASP[file].files[file] = fs.statSync(file).mtime - 0;
 	// 读取文件
 	return IIS.ASP[file].code = includeFile(fs.readFileSync(file, "utf-8"), site, IIS.ASP[file].files);
