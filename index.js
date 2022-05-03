@@ -19,8 +19,7 @@ process.chdir(__dirname);
 const app = (req, res) => {
 	const { pathname, query } = url.parse(req.url, true);
 	const hostname = req.headers.host.replace(/\:\d+$/, "");
-	var host = sites.find(s => s.domain == hostname);
-	if(!host) host = sites[0];	// 默认为第一个站点
+	var host = sites.find(s => s.domain == hostname) || sites[0];	// 默认为第一个站点
 	var site = { host, out: new Array, req, res, query };
 	var paths = pathname.split(/\.asp(?=\/)/);
 	// 服务端环境变量定义
@@ -71,8 +70,7 @@ fs.stat("ssl/default/key.pem", err => {
 	var ssl = {
 		SNICallback: (domain, cb) => {
 			// 域名访问时才会触发 SNI
-			var host = sites.find(s => s.domain == domain);
-			if(!host) host = sites[0];
+			var host = sites.find(s => s.domain == domain) || sites[0];
 			var key = !host.key ? pemKey : host.pemKey ??= fs.readFileSync(host.key, "utf-8");
 			var cert = !host.cert ? pemCrt : host.pemCrt ??= fs.readFileSync(host.cert, "utf-8");
 			return cb(null, tls.createSecureContext({ key, cert }));
