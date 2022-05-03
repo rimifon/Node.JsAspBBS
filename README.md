@@ -1,4 +1,4 @@
-# Node.JsASP
+# Node.JsAsp
 
 一个 node 版的 “IIS”，支持经典的 JScript 版 asp 语法，并实现了 #include 指令、Session处理、应用缓存等。
 
@@ -14,8 +14,13 @@ node . 80 443
 
 支持运行多个网站，打开 index.js，编辑第四行，即可添加多个站点。
 
-默认数据库为 SQLite，第一次使用数据库，需要先安装 sqlite3 模块：
+默认数据库为 SQLite，第一次使用数据库，需要先安装 better-sqlite3 模块（异步版为 sqlite3）：
 ``` bash
 npm install better-sqlite3
 #yarn add better-sqlite3   # 或者用 yarn 安装
 ```
+
+以下环境测试通过：
+- Linux + nodejs 16.15
+- Windows + nodejs 16.13
+- Android + termux + proot-distro + alpine + nodejs 16.15
