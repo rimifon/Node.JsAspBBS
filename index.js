@@ -207,7 +207,7 @@ function aspParser(code, site, notRun = false, args = new Object) {
 	site.sys ??= { sTime: new Date };
 	var sys = site.sys;
 	sys.ns = path.dirname(site.env.URL) + "|";
-	function compileAsp(site) {
+	function compileAsp(site, code, notRun, args) {
 		if(!notRun && site.asp.func) return site.asp.func;
 		// inlude 方法加载时需要重新解析 #include 指令
 		if(notRun) code = includeFile(code, site);
@@ -235,17 +235,18 @@ function aspParser(code, site, notRun = false, args = new Object) {
 			site.send(rs); } catch(e){ site.outerr(e.message); }
 			finally{ arg.closeAllDb(); arg.dbg().appendLog(); }
 		};
-		arr3.push("arr4 = site.out;");
-		arr3.push(`return { closeAllDb, dbg, boot: "function" == typeof boot ? boot : 0 };`);
+		arr3.unshift("arr4 = site.out;");
+		arr3.push(`return { closeAllDb: "function" == typeof closeAllDb ? closeAllDb : 0, dbg: "function" == typeof dbg ? dbg : 0, boot: "function" == typeof boot ? boot : 0 };`);
 		eval("var func = (site, sys, qstr, form, env, include) => { " + arr3.join("\r\n") + " };");
 		var compiledFunc = function(site, sys) {
 			const { qstr, form, env, include } = aspHelper(site);
-			var arg = func(site, sys, qstr, form, env, include); if(!notRun) runAsp(arg, qstr, site);
+			var arg = func(site, sys, qstr, form, env, include);
+			if(!notRun) runAsp(arg, qstr, site);
 		};
 		if(!notRun) site.asp.func = compiledFunc;
 		return compiledFunc;
 	}
-	try { compileAsp(site)(site, sys); } catch(err) {
+	try { compileAsp(site, code, notRun, args)(site, sys); } catch(err) {
 		return site.outerr(JSON.stringify({
 			name: err.name,
 			file: site.env.URL,
