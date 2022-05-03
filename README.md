@@ -18,6 +18,6 @@ node . 80 443
 
 默认数据库为 SQLite，第一次使用数据库，需要先安装 sqlite3 模块：
 ``` bash
-npm install sqlite3
-#yarn add sqlite3   # 或者用 yarn 安装
+npm install better-sqlite3
+#yarn add better-sqlite3   # 或者用 yarn 安装
 ```
