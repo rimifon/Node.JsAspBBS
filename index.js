@@ -101,13 +101,11 @@ const IIS = {
 		// 判断是否 ASP
 		if(/\.asp$/i.test(site.env.URL)) return this.asp(site);
 		var file = path.join(site.host.root, site.env.URL);
-		var mime = getMime(path.extname(file));
-		var fileSize = fs.statSync(file).size;
 		var headers = {
-			"Content-Type": mime,
-			"Content-Length": fileSize
+			"Content-Type": getMime(path.extname(file)),
+			"Content-Length": fs.statSync(file).size,
+			"Cache-Control": "max-age=1800"
 		};
-		headers["Cache-Control"] = "max-age=1800";
 		site.res.writeHead(200, headers);
 		fs.createReadStream(file).pipe(site.res);
 	}
