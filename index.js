@@ -101,9 +101,11 @@ const IIS = {
 		// 判断是否 ASP
 		if(/\.asp$/i.test(site.env.URL)) return this.asp(site);
 		var file = path.join(site.host.root, site.env.URL);
+		var stat = fs.statSync(file);
 		var headers = {
 			"Content-Type": getMime(path.extname(file)),
-			"Content-Length": fs.statSync(file).size,
+			"Content-Length": stat.size,
+			"Last-Modified": stat.mtime.toUTCString(),
 			"Cache-Control": "max-age=1800"
 		};
 		site.res.writeHead(200, headers);
