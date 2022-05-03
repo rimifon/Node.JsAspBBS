@@ -48,9 +48,10 @@ async function apidoc(root, route, noFmt) {
 		if(!origin) return;
 		site.res.setHeader("Access-Control-Allow-Origin", origin);
 		site.res.setHeader("Access-Control-Max-Age", "86400");
+		site.res.setHeader("Access-Control-Expose-Headers", "*");
+		site.res.setHeader("Access-Control-Allow-Headers", "*");
 		site.res.setHeader("Access-Control-Allow-Credentials", "true");
 		site.res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, HEAD, OPTIONS");
-		if(sys.cors) site.res.setHeader("Access-Control-Allow-Headers", sys.cors);
 	}
 
 	if(noFmt) return rs;

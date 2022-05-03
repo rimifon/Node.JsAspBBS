@@ -1,6 +1,7 @@
-const port = process.argv[2] ?? 3000;
+const portHttp = process.argv[2] ?? 3000;
+const portHttps = process.argv[3] ?? 4433;
 const sites = [
-	{ domain: "default", root: "wwwroot/bbs-sync" },		// 同步版 BBS（默认站点）
+	{ domain: "default", root: "wwwroot/bbs-sync", key: "ssl/localhost/key.pem", cert: "ssl/localhost/server.crt" },		// 同步版 BBS（默认站点）
 	{ domain: "127.34.56.77", root: "wwwroot/default" },	// 异步版 BBS（http://127.34.56.77:3000）
 	{ domain: "127.34.56.78", root: "wwwroot/127.34.56.78" }	// 测试站点（http://127.34.56.78:3000）
 ];
@@ -8,12 +9,14 @@ const indexPages = [ "index.html", "default.asp" ];
 
 const cache = new Object;
 const fs = require("fs");
+const tls = require("tls");
 const http = require("http");
+const https = require("https");
 const url = require("url");
 const path = require("path");
 
 process.chdir(__dirname);
-http.createServer((req, res) => {
+const app = (req, res) => {
 	const { pathname, query } = url.parse(req.url, true);
 	const hostname = req.headers.host.replace(/\:\d+$/, "");
 	var host = sites.find(s => s.domain == hostname);
@@ -29,6 +32,7 @@ http.createServer((req, res) => {
 		"URL": paths[1] ? paths[0] + ".asp" : paths[0]
 	};
 	for(var x in req.headers) site.env["HTTP_" + x.toUpperCase().replace(/\-/g, "_")] = req.headers[x];
+	if(req.connection.encrypted) site.env["HTTPS"] = "on";
 	// 输出错误信息
 	site.outerr = (msg, code = 500, more) => {
 		var err = { err: msg };
@@ -43,7 +47,7 @@ http.createServer((req, res) => {
 
 	// 判断是目录还是文件
 	fs.stat(path.join(site.host.root, site.env.URL), (err, stats) => {
-		if(err) return site.outerr(err.message, 500);
+		if(err) return site.outerr(err.message, 404);
 		return stats.isFile() ? IIS.file(site) : IIS.folder(site);
 	});
 
@@ -56,9 +60,27 @@ http.createServer((req, res) => {
 		site.out.length = 0;
 	};
 
-}).listen(port);
+};
+http.createServer(app).listen(portHttp);
+console.log("HTTP server running at " + portHttp);
 
-console.log("Server running at " + port);
+fs.stat("ssl/default/key.pem", err => {
+	if(err) return;	// 没有默认 SSL 证书，不启用 HTTPS 服务
+	let pemKey = fs.readFileSync("ssl/default/key.pem");
+	let pemCrt = fs.readFileSync("ssl/default/server.crt");
+	var ssl = {
+		SNICallback: (domain, cb) => {
+			// 域名访问时才会触发 SNI
+			var host = sites.find(s => s.domain == domain);
+			if(!host) host = sites[0];
+			var key = !host.key ? pemKey : host.pemKey ??= fs.readFileSync(host.key);
+			var cert = !host.cert ? pemCrt : host.pemCrt ??= fs.readFileSync(host.cert);
+			return cb(null, tls.createSecureContext({ key, cert }));
+		}, key: pemKey, cert: pemCrt
+	};
+	https.createServer(ssl, app).listen(portHttps);
+	console.log("HTTPS server running at " + portHttps);
+});
 
 // Internet Information Server
 const IIS = {
@@ -272,7 +294,8 @@ function InitSession(site) {
 	var sessKey = site.sessKey ??= site.env.HTTP_ASPSESSIONID || site.req.headers.cookie?.match(/ASPSESSIONID\=(\w+)/)?.[1];
 	if(!sessKey) {
 		sessKey = site.sessKey = new Date().valueOf().toString(36).toUpperCase() + Math.random().toString(36).slice(2).toUpperCase();
-		site.res.setHeader("Set-Cookie", `ASPSESSIONID=${sessKey}; path=/; SameSite=Lax`);
+		site.res.setHeader("Set-Cookie", `ASPSESSIONID=${sessKey}; path=/; SameSite=${ site.env.HTTPS ? "None; Secure" : "Lax" }`);
+		site.res.setHeader("AspSessionID", sessKey);
 	}
 	cache.Session ??= new Object;
 	var session = cache.Session[site.host.domain] ??= new Object;
