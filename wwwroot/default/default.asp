@@ -2,9 +2,11 @@
 function getSite() { return site; }
 function boot(route) {
 	sys.name = "Node.JsAspBBS";
-	sys.res = "res/bbs/";
+	sys.res = "/res/bbs/";
 	sys.dbPath = "/app_data/NodeJsAspBBS.db";
 	sys.ns = "Node.JsAspBBS";
+	// 根据当前路径自动配置路由模式，如果无法确认，则随机选择一个路由模式
+	sys.routepath = [ "/?r=", "/default.asp/" ][ !qstr("r") ? !env("PATH_INFO") ? sys.sTime % 2 : 1 : 0 ];
 	// sys.apiAuth = "Admin:666666";
 	sys.onerror = catchErr;
 	var roles = [ "客人", "普通会员", "认证会员", "论坛副版主", "论坛版主", "分类区版主", "论坛总版主", "论坛坛主" ];
@@ -77,7 +79,7 @@ function boot(route) {
 		,logout: function() {
 			sys.onlineMe.roleid = 0;
 			sys.onlineMe.nick = "客人";
-			me().lose(); redir(".");
+			me().lose(); redir("/");
 		}
 
 		// 用户注册
@@ -118,7 +120,7 @@ function boot(route) {
 				if(x.replynum < 12) return "";
 				var arr = new Array;
 				var page = Math.ceil((x.replynum + 1) / 12);
-				for(var i = 1; i <= page; i++) arr.push(i.toString().link("?r=topic/" + x.topicid + "/" + i));
+				for(var i = 1; i <= page; i++) arr.push(i.toString().link(sys.routepath + "?topic/" + x.topicid + "/" + i));
 				if(page > 7) arr.splice(3, page - 6, "……");
 				return " [第 " + arr.join(" ") + " 页]";
 			};
@@ -359,7 +361,7 @@ function boot(route) {
 
 			// 管理 API 接口
 			,api: {
-				Memo: [ "管理端 API 接口 " + "[返回论坛]".link(".") ]
+				Memo: [ "管理端 API 接口 " + "[返回论坛]".link("/") ]
 
 				,SetSiteNameDoc: [ "设置网站名称", "sitename, weiboname", "sitename: 网站名称", "weiboname: 微博版式名称" ]
 				,setsitename: function() {
@@ -433,7 +435,7 @@ function boot(route) {
 					return { msg: "操作完成" };
 				}
 
-				,ForumSaveDoc: [ "保存板块信息", "[forumid], pid, nick, intro, sort", "点此进入添加版块界面".link("?r=admin/forum/0") ]
+				,ForumSaveDoc: [ "保存板块信息", "[forumid], pid, nick, intro, sort", "点此进入添加版块界面".link(sys.routepath + "admin/forum/0") ]
 				,forumsave: function() {
 					if(~~me().roleid < 7) return { err: "没有权限" };
 					var par = { nick: form("nick"), intro: form("intro"), pid: form("pid"), sort: form("sort") };
@@ -463,7 +465,7 @@ function boot(route) {
 
 		// 微博模块
 		,weibo: {
-			Memo: [ "微博模块 | " + "点击访问".link("weibo/"), "微博模块是一个可以发布微博的模块，可以让用户发布微博，并且可以让用户关注其他用户。" ]
+			Memo: [ "微博模块 | " + "点击访问".link("/weibo/"), "微博模块是一个可以发布微博的模块，可以让用户发布微博，并且可以让用户关注其他用户。" ]
 
 			// 微博首页
 			,HomeDoc: [ "微博首页" ]

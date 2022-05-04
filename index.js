@@ -295,7 +295,7 @@ function includeFile(code, site, files = new Object) {
 	var text = fileExists ? fs.readFileSync(file, "utf-8") : "";
 	site.cwd = path.dirname(file);	//	更新当前目录
 	// 再次包含
-	return includeFile(code.replace(reg, text), site);
+	return includeFile(code.replace(reg, text), site, files);
 }
 
 // ASP 辅助方法

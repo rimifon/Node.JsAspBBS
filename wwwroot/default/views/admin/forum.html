@@ -39,7 +39,7 @@
 var ipt = document.querySelectorAll("input, select, textarea");
 ipt[4].onclick = function() {
 	if(!ipt[1].value) return alert("请输入板块名称");
-	post("?r=admin/api/forumSave", {
+	post("<%= sys.routepath %>admin/api/forumSave", {
 		forumid: "<%= forum.forumid %>", pid: ipt[0].value, nick: ipt[1].value, intro: ipt[2].value, sort: ~~ipt[3].value
 	}, function(res) {
 		if(res.err) return alert(res.err);
@@ -52,7 +52,7 @@ ipt[5].onclick = function() { history.back(); };
 
 function dropForum() {
 	if(!confirm("确定要删除此版块吗？")) return;
-	post("?r=admin/api/forumDrop", { forumid: "<%= forum.forumid %>" }, function(res) {
+	post("<%= sys.routepath %>admin/api/forumDrop", { forumid: "<%= forum.forumid %>" }, function(res) {
 		if(res.err) return alert(res.err);
 		alert(res.msg);
 		location.assign(".");

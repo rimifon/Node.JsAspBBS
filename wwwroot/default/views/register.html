@@ -14,7 +14,7 @@
 .main .tc input{ font: 4vw/6vw arial; padding: 1vw 4vw }
 }
 </style>
-<div class="pos mt bd"><a href="."><%= sys.name %></a> → 新用户注册</div>
+<div class="pos mt bd"><a href="/"><%= sys.name %></a> → 新用户注册</div>
 <div class="mt bd">
 	<div class="cap tc">请输入您的用户名、密码注册</div>
 	<div class="main">
@@ -41,12 +41,12 @@ ipt[3].onclick = function() {
 	if(!ipt[0].value) return alert("请输入用户名");
 	if(!ipt[1].value) return alert("请输入密码");
 	if(ipt[1].value != ipt[2].value) return alert("两次密码不一致密码");
-	post("?r=api/register", {
+	post("<%= sys.routepath %>api/register", {
 		user: ipt[0].value, pass: ipt[1].value
 	}, function(res) {
 		if(res.err) return alert(res.err);
 		alert(res.msg);
-		location.assign(".");
+		location.assign("/");
 	});
 };
 </script>

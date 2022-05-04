@@ -13,8 +13,8 @@
 .c2{ width: 1in }
 .c3{ width: 1in }
 .c4{ width: 7cm }
-.nonew{ background: var(--bg) url(res/bbs/icon/topicnonew.gif) no-repeat center }
-.ding{ background: var(--bg) url(res/bbs/icon/abstop.gif) no-repeat center }
+.nonew{ background: var(--bg) url(<%= sys.res %>icon/topicnonew.gif) no-repeat center }
+.ding{ background: var(--bg) url(<%= sys.res %>icon/abstop.gif) no-repeat center }
 a.blue{ color: blue }
 a.blue:before{ content: '[精]'; color: red; font-weight: bold }
 .post{ padding: 1cm }
@@ -55,7 +55,7 @@ textarea{ background-color: #eee }
 } 
 </style>
 <div class="pos mt bd">
-	<a href="."><%= sys.name %></a> → <%= forum.nick %> → 浏览论坛主题
+	<a href="/"><%= sys.name %></a> → <%= forum.nick %> → 浏览论坛主题
 </div>
 <!-- 论坛在线统计 -->
 <div class="online bd mt">
@@ -90,14 +90,14 @@ textarea{ background-color: #eee }
 				<a onclick="doJing(parentNode)"><%= x.jing ? "取消" : "" %>加精</a> |
 				<a onclick="doDrop(parentNode)">删除</a>
 			</div><% } %>
-			<a href="?r=topic/<%= x.topicid %>" class="title <%= x.ding ? 'bold' : x.jing ? 'blue' : 'nml' %>"><%= x.title %></a><%= showPage(x) %>
+			<a href="<%= sys.routepath %>topic/<%= x.topicid %>" class="title <%= x.ding ? 'bold' : x.jing ? 'blue' : 'nml' %>"><%= x.title %></a><%= showPage(x) %>
 		</div>
 		<div class="col c2 tc for-web"><%= x.nick %></div>
 		<div class="col c3 tc for-web"><%= x.replynum %>/<%= x.pv %></div>
 		<div class="col c4 tc ellipsis"><%= x.replytime == null ? "-" : tojson(x.replytime).slice(1, -4) %> | <%= x.reply || "-" %></div>
 	</div><% }); %>
 </div>
-<div class="pager mt">分页：<%= makePager(pager, "?r=forum/" + forum.forumid + "/") || "暂无分页" %>，共 <%= pager.pagenum %> 页</div>
+<div class="pager mt">分页：<%= makePager(pager, sys.routepath + "forum/" + forum.forumid + "/") || "暂无分页" %>，共 <%= pager.pagenum %> 页</div>
 <!-- 快速发表主题 -->
 <div class="bd mt">
 	<div class="cap tc">快速发表新主题</div>
@@ -107,7 +107,7 @@ textarea{ background-color: #eee }
 				<span class="label">账号/密码</span>
 				<div class="auto user">
 					<span class="for-web">用户：</span><input name="user" placeholder="请输入用户名" />
-					<span class="for-web"><a href="?r=register">没有注册？</a>
+					<span class="for-web"><a href="<%= sys.routepath %>register">没有注册？</a>
 					密码：</span><input name="pass" type="password" placeholder="请输入登录密码" />
 				</div>
 			</div><% } %>
@@ -143,17 +143,17 @@ ipt[ipt.length - 1].onclick = function() {
 	if("pass" in data && !data.pass) return alert("请填写密码");
 	if(!data.title) return alert("请填写主题标题");
 	if(!data.message) return alert("请填写帖子内容");
-	post("?r=api/topicAdd", data, function(res) {
+	post("<%= sys.routepath %>api/topicAdd", data, function(res) {
 		if(res.err) return alert(res.err);
 		alert(res.msg);
-		location.assign("?r=forum/" + data.forumid);
+		location.assign("<%= sys.routepath %>forum/" + data.forumid);
 	});
 };
 function doDing(tag) {
 	var data = tag.dataset.item.split("|");
 	var op = data[1] == 1 ? "取消" : "";
 	if(!confirm("确定要" + op + "固定该帖子吗？")) return;
-	post("?r=api/topicDing", { topicid: data[0], state: data[1] == 1 ? 0 : 1 }, function(res) {
+	post("<%= sys.routepath %>api/topicDing", { topicid: data[0], state: data[1] == 1 ? 0 : 1 }, function(res) {
 		if(res.err) return alert(res.err);
 		alert(res.msg); location.reload();
 	});
@@ -162,7 +162,7 @@ function doJing(tag) {
 	var data = tag.dataset.item.split("|");
 	var op = data[2] == 1 ? "取消" : "";
 	if(!confirm("确定要给帖子" + op + "加精吗？")) return;
-	post("?r=api/topicJing", { topicid: data[0], state: data[2] == 1 ? 0 : 1 }, function(res) {
+	post("<%= sys.routepath %>api/topicJing", { topicid: data[0], state: data[2] == 1 ? 0 : 1 }, function(res) {
 		if(res.err) return alert(res.err);
 		alert(res.msg); location.reload();
 	});
@@ -170,7 +170,7 @@ function doJing(tag) {
 function doDrop(tag) {
 	if(!confirm("确定要删除该帖子吗？")) return;
 	var data = tag.dataset.item.split("|");
-	post("?r=api/topicDrop", { topicid: data[0] }, function(res) {
+	post("<%= sys.routepath %>api/topicDrop", { topicid: data[0] }, function(res) {
 		if(res.err) return alert(res.err);
 		alert(res.msg); location.reload();
 	});
@@ -182,7 +182,7 @@ function startUp(x) {
 	if(file.size > 1024 * 1024) return alert("文件不能大于 1Mb");
 	var body = new FormData;
 	body.append("file", file);
-	fetch("?r=api/upload", { method: "POST", body: body }).then(function(res){ return res.json(); }).
+	fetch("<%= sys.routepath %>api/upload", { method: "POST", body: body }).then(function(res){ return res.json(); }).
 		then(function(res) {
 			if(res.err == "需要登录") return login(x);
 			if(res.err) return alert(res.err);
@@ -197,7 +197,7 @@ function login(file) {
 	if(ipt[0].name != "user") return alert("请尝试登录后继续操作");
 	var data = { user: ipt[0].value, pass: ipt[1].value };
 	if(!data.user || !data.pass) return alert("用户名和密码不能为空");
-	post("?r=api/login", data, function(res) {
+	post("<%= sys.routepath %>api/login", data, function(res) {
 		if(res.err) return alert(res.err);
 		startUp(file);	// 重新发起上传
 	});

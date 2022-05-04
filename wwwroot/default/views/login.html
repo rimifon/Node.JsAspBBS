@@ -14,14 +14,14 @@
 .main .tc input{ font: 4vw/6vw arial; padding: 1vw 4vw }
 }
 </style>
-<div class="pos mt bd"><a href="."><%= sys.name %></a> → 用户登录</div>
+<div class="pos mt bd"><a href="/"><%= sys.name %></a> → 用户登录</div>
 <div class="mt bd">
 	<div class="cap tc">请输入您的用户名、密码登录</div>
 	<div class="main">
 		<div class="form bd">
 			<div>
 				<span class="fl">用户名：</span>
-				<p><input name="user" placeholder="请输入用户名" /> <a href="?r=register" class="for-web">您没有注册？</a></p>
+				<p><input name="user" placeholder="请输入用户名" /> <a href="<%= sys.routepath %>register" class="for-web">您没有注册？</a></p>
 			</div>
 			<div style="border-top: var(--bd)">
 				<span class="fl">密码：</span>
@@ -42,12 +42,12 @@ ipt[2].onclick = doLogin;
 function doLogin() {
 	if(!ipt[0].value) return alert("请输入用户名"), ipt[0].focus();
 	if(!ipt[1].value) return alert("请输入密码"), ipt[1].focus();
-	post("?r=api/login", {
+	post("<%= sys.routepath %>api/login", {
 		user: ipt[0].value, pass: ipt[1].value
 	}, function(res) {
 		if(res.err) return alert(res.err);
 		alert(res.msg);
-		location.assign(".");
+		location.assign("/");
 	});
 };
 </script>

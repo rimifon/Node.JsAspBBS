@@ -20,7 +20,7 @@ a{ color: #000; text-decoration: none }
 body{ margin: 0mm 7mm; font: 4mm/6mm simsun,arial }
 .mt{ margin-top: 3mm }
 .head .nav{ background-image: linear-gradient(#fff, #eee); padding: 1mm 2mm }
-.bd .cap{ background: #73a2de url(res/bbs/bg.gif) no-repeat top / 100% 1cm; padding: 2mm; color: #fff }
+.bd .cap{ background: #73a2de url(<%= sys.res %>bg.gif) no-repeat top / 100% 1cm; padding: 2mm; color: #fff }
 .bd .main{ border-top: var(--bd) }
 .pos{ padding: 1mm 3mm; background-color: var(--bg) }
 .footer, .footer a{ color: #777 }
@@ -33,25 +33,25 @@ body{ font: 4vw/6vw arial; margin: 0mm; background: #fff }
 .mt{ margin-top: 2vw }
 .head .nav{ padding: 1vw 2vw }
 .head .nav img{ height: 4vw }
-.bd .cap{ background: #73a2de url(res/bbs/bg.gif) no-repeat top / 100% 6vw; padding: 1vw 2vw; color: #fff }
+.bd .cap{ background: #73a2de url(<%= sys.res %>bg.gif) no-repeat top / 100% 6vw; padding: 1vw 2vw; color: #fff }
 .footer, .footer a{ color: #777; font-size: 3vw }
 .footer{ padding: 3vw 0mm }
 }
 </style></head><body>
 <div class="head">
 	<div class="bd nav">
-		<a href="." class="fr"><img src="<%= sys.res %>gohome.gif" /></a>
+		<a href="/" class="fr"><img src="<%= sys.res %>gohome.gif" /></a>
 		&#xbb; 欢迎您，<b><%= me().nick || "客人" %></b>：<% if(!me().isLogin) { %>
-		<a href="?r=login">登录</a> | <a href="?r=register">注册</a><% } else { %>
-		<a href="?r=logout">退出登录</a><% } %>
-		<span class="for-wap"> | <a href="weibo/">微博</a></span>
+		<a href="<%= sys.routepath %>login">登录</a> | <a href="<%= sys.routepath %>register">注册</a><% } else { %>
+		<a href="<%= sys.routepath %>logout">退出登录</a><% } %>
+		<span class="for-wap"> | <a href="/weibo/">微博</a></span>
 	</div>
 </div>
 <% func(); %>
 <div class="footer tc mt">
 	<hr color="#4d76b3" size="1" width="500" class="for-web" />
 	<tt>&copy; <%= sys.sTime.getFullYear() %></tt> &nbsp; Node.JsAspBBS &nbsp;<span class="for-web"> 版本：<a href="http://228mi.com:1280/ver/NodeJsAspBBS.2205.03.zip">v1.2205.03</a>；</span>
-	<%if (me().roleid > 6) { %><a href="?r=admin/api">管理中心</a> &nbsp;<% } %>
+	<%if (me().roleid > 6) { %><a href="<%= sys.routepath %>admin/api">管理中心</a> &nbsp;<% } %>
 	执行 <%= new Date - sys.sTime %> ms</a>
 </div>
 <script type="text/javascript">

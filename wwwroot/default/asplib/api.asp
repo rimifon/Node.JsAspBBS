@@ -27,9 +27,10 @@ async function apidoc(root, route, noFmt) {
 	function showApi() {
 		if(sys.hideApi) return { err: "404 Object not found." };
 		if(sys.apiAuth && !apiAuth()) return { err: "403 Forbidden" };
-		sys.apipath = (qstr("r") || "").replace(/\/+$/g, "");
-		if(sys.apipath) sys.apipath += "/";
-		sys.apipath = "?r=" + sys.apipath;
+		var routeMode = !qstr("r");	// path_info : ?r=xxx
+		var apipath = routeMode ? env("URL") : "?r=";
+		apipath += routeMode ? env("PATH_INFO") : qstr("r");
+		sys.apipath = apipath.replace(/\/+$/g, "") + "/";
 		if(sys.hideApiFunc) Function.prototype.toString = function() { return "function() { [ native code ] }"; };
 		%><!-- #include file="views/apidoc.html" --><%
 	}

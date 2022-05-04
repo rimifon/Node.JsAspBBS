@@ -56,8 +56,8 @@ textarea{ background-color: #eee }
 .pager b{ color: #900; text-decoration: underline }
 }
 </style>
-<div class="pos mt bd"><a href="."><%= sys.name %></a> → <a href="?r=forum/<%= topic.forumid %>"><%= topic.nick %></a> → 浏览：帖子主题</div>
-<% if(pager.pagenum > 1) { %><div class="pager mt">分页: <%= makePager(pager, "?r=topic/" + topic.topicid + "/") %>， 共 <%= pager.pagenum %> 页</div>
+<div class="pos mt bd"><a href="/"><%= sys.name %></a> → <a href="<%= sys.routepath %>forum/<%= topic.forumid %>"><%= topic.nick %></a> → 浏览：帖子主题</div>
+<% if(pager.pagenum > 1) { %><div class="pager mt">分页: <%= makePager(pager, sys.routepath + "topic/" + topic.topicid + "/") %>， 共 <%= pager.pagenum %> 页</div>
 <% } %><div class="bd mt topic">
 	<div class="cap"><b class="for-web">* 帖子主题：</b><%= topic.title %></div><% rows.forEach(function(x, i) { %>
 	<!-- 帖子内容开始 -->
@@ -96,7 +96,7 @@ textarea{ background-color: #eee }
 		</div>
 	</div><% }); %>
 </div>
-<div class="pager mt">分页: <%= makePager(pager, "?r=topic/" + topic.topicid + "/") %>， 共 <%= pager.pagenum %> 页</div>
+<div class="pager mt">分页: <%= makePager(pager, sys.routepath + "topic/" + topic.topicid + "/") %>， 共 <%= pager.pagenum %> 页</div>
 <!-- 快速发表主题 -->
 <div class="bd mt">
 	<div class="cap tc"><a name="reply">快速回复主题</a></div>
@@ -106,7 +106,7 @@ textarea{ background-color: #eee }
 				<span class="label">账号/密码</span>
 				<div class="auto user">
 					<span class="for-web">用户：</span><input name="user" placeholder="请输入用户名" />
-					<span class="for-web"><a href="?r=register">没有注册？</a>
+					<span class="for-web"><a href="<%= sys.routepath %>register">没有注册？</a>
 					密码：</span><input name="pass" type="password" placeholder="请输入登录密码" />
 				</div>
 			</div><% } %>
@@ -146,7 +146,7 @@ ipt[ipt.length - 1].onclick = function() {
 		if(!data.pass) return alert("请输入密码");
 	}
 	if(!data.message) return alert("请输入评论内容");
-	post("?r=api/replyAdd", data, function(res) {
+	post("<%= sys.routepath %>api/replyAdd", data, function(res) {
 		if(res.err) return alert(res.err);
 		alert(res.msg);
 		location.reload();
@@ -154,7 +154,7 @@ ipt[ipt.length - 1].onclick = function() {
 };
 function dropReply(id, lou) {
 	if(!confirm("确定要删除这个" + (lou == 1 ? "帖子" : "评论") + "吗？")) return;
-	post("?r=api/replyDrop", { replyid: id }, function(res) {
+	post("<%= sys.routepath %>api/replyDrop", { replyid: id }, function(res) {
 		if(res.err) return alert(res.err);
 		alert(res.msg);
 		if(lou != 1) location.reload();
@@ -178,7 +178,7 @@ var editor = new function() {
 		delete me.target; delete me.oldtag;
 	};
 	txt[2].onclick = function() {
-		post("?r=api/replyEdit", { replyid: me.replyid, message: txt[0].value }, function(res) {
+		post("<%= sys.routepath %>api/replyEdit", { replyid: me.replyid, message: txt[0].value }, function(res) {
 			if(res.err) return alert(res.err);
 			alert(res.msg); location.reload();
 		});
@@ -191,7 +191,7 @@ var editor = new function() {
 function editReply(tag, replyid) {
 	var msg = tag.parentNode.parentNode.querySelector(".msg");
 	if(!msg) return;	// 已经在编辑状态了
-	post("?r=api/replyLoad", { replyid: replyid }, function(res) {
+	post("<%= sys.routepath %>api/replyLoad", { replyid: replyid }, function(res) {
 		if(res.err) return alert(res.err);
 		editor.edit(msg, res.message, replyid);
 	});
@@ -204,7 +204,7 @@ function startUp(x) {
 	if(file.size > 1024 * 1024) return alert("文件不能大于 1Mb");
 	var body = new FormData;
 	body.append("file", file);
-	fetch("?r=api/upload", { method: "POST", body: body }).then(function(res) { return res.json(); }).
+	fetch("<%= sys.routepath %>api/upload", { method: "POST", body: body }).then(function(res) { return res.json(); }).
 		then(function(res) {
 			if(res.err == "需要登录") return login(x);
 			if(res.err) return alert(res.err);
@@ -219,7 +219,7 @@ function login(file) {
 	if(ipt[0].name != "user") return alert("请尝试登录后继续操作");
 	var data = { user: ipt[0].value, pass: ipt[1].value };
 	if(!data.user || !data.pass) return alert("用户名和密码不能为空");
-	post("?r=api/login", data, function(res) {
+	post("<%= sys.routepath %>api/login", data, function(res) {
 		if(res.err) return alert(res.err);
 		startUp(file);	// 重新发起上传
 	});
