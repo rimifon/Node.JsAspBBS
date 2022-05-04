@@ -342,7 +342,7 @@ function boot(route) {
 				var mapdir = ensureDir(savePath);
 				var fname = sys.sTime.toString("hhmmss") + Math.random().toString(36).substr(1, 6) + "." + ext;
 				fs.writeFileSync(mapdir + "/" + fname, form().file.data);
-				return { path: savePath + "/" + fname };
+				return { path: "/" + savePath + "/" + fname };
 			}
 		}
 
