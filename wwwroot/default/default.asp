@@ -337,12 +337,12 @@ function boot(route) {
 				if(!filter.test(form().file.name)) return { err: form().file.name + "文件格式不正确" };
 				var ext = RegExp.$1.toLowerCase();
 				if(form().file.size > maxSize) return { err: "文件大小不能超过 1M" };
-				var savePath = "uploads/nodeAspBBS/" + sys.sTime.toString("yyyy/MM/dd");
+				var savePath = "/uploads/nodeAspBBS/" + sys.sTime.toString("yyyy/MM/dd");
 				// 判断目录 savePath 是否存在，不存在则递归建立目录
 				var mapdir = ensureDir(savePath);
 				var fname = sys.sTime.toString("hhmmss") + Math.random().toString(36).substr(1, 6) + "." + ext;
 				fs.writeFileSync(mapdir + "/" + fname, form().file.data);
-				return { path: "/" + savePath + "/" + fname };
+				return { path: savePath + "/" + fname };
 			}
 		}
 
