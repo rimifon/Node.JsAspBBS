@@ -1,4 +1,6 @@
 <%
+var sys = { sTime: new Date };
+
 function ss(ns) {
 	if(!ns) ns = "global.";
 	var root = InitSession(site).data;
@@ -13,7 +15,7 @@ function cc(k, f, t) {
 	var rs = root[k];
 	var timer = t * 1000;
 	if(rs) {
-		if(rs.time - site.sys.sTime + timer > 0) return rs.value;
+		if(rs.time - sys.sTime + timer > 0) return rs.value;
 		// 数据过期了，重新获取
 		clearTimeout(rs.handler);
 	}
@@ -22,7 +24,7 @@ function cc(k, f, t) {
 	var saveVal = value => {
 		if(value === k.none) return;
 		// 没有初始化
-		root[k] = { value, time: site.sys.sTime };
+		root[k] = { value, time: sys.sTime };
 		root[k].handler = setTimeout(() => {
 			// 定时清理缓存
 			if(!root[k]) return;
@@ -34,11 +36,15 @@ function cc(k, f, t) {
 	return saveVal(value);
 }
 
+function echo(str) { Response.Write(str); }
 function html(str) { return (str + "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
 function tojson(obj) { return JSON.stringify(obj); }
 function fromjson(str) { return JSON.parse(str); }
-function redir(url) { IIS.redir(site, url); }
-function mappath(path) { return site.getPath(path); }
+function redir(url) { Response.Redirect(url); }
+function mappath(path) { return Server.MapPath(path); }
+function qstr(k) { return !k ? site.query : site.query[k]; }
+function form(k) { return !k ? site.form : site.form[k]; }
+function env(k) { return !k ? site.env : site.env[k]; }
 
 function ajax(href, data, headers, ssl = new Object) {
 	if("string" == typeof headers) headers = { "Content-Type": headers };

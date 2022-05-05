@@ -1,6 +1,20 @@
 <!-- #include file="core.asp" --><%
 sys.debug = true;	// 默认启用调式跟踪
 
+await (async route => {
+	sys.ns = path.dirname(env("URL"));
+	if("function" != typeof boot) return;
+	try {
+		let rs = await boot(route);
+		echo(rs instanceof Object ? tojson(rs) : rs);
+	} catch(err) {
+		// site.out.length = 0;
+		dbg().trace({ err: err.message, sql : db().lastSql });
+		echo(tojson({ err: err.message }));
+	}
+	finally{ closeAllDb(); dbg().appendLog(); }
+})(qstr("r") ? qstr("r").split("/") : env("PATH_INFO").slice(1).split("/"));
+
 function me() {
 	if(sys.me) return sys.me;
 	var ins = sys.me = ss(sys.ns).me ??= new Object;

@@ -205,10 +205,7 @@ function parseUrlEncoded(site) {
 
 // ASP 解析器
 function aspParser(code, site, notRun = false, args = new Object) {
-	site.sys ??= { sTime: new Date };
-	var sys = site.sys;
-	sys.ns = path.dirname(site.env.URL) + "|";
-	function compileAsp(site, code, notRun, args) {
+	const compileAsp = (site, code, notRun, args) => {
 		if(!notRun && site.asp.func) return site.asp.func;
 		// inlude 方法加载时需要重新解析 #include 指令
 		if(notRun) code = includeFile(code, site);
@@ -220,41 +217,33 @@ function aspParser(code, site, notRun = false, args = new Object) {
 		for(var k in args) arr3.push(`var ${k} = loadArg("${k}");`);
 		var blockWrite = i => arr4.push(arr1[i]);	// 写入缓冲
 		arr1.forEach((v, i) => {
-			arr3.push("blockWrite(" + i + ");");
+			if(v) arr3.push("blockWrite(" + i + ");");
 			var js = arr2[i]?.slice(2, -2).replace(/(^\s+|\s+$)/g, "");
 			if(!js) return;
 			if(js.charAt(0) == "=") js = "arr4.push(" + js.slice(1) + ");";
 			arr3.push(js);
 		});
-		var echo = str => arr4.push(str);
-		var runAsp = async function(arg, qstr, site) {
-			if("function" != typeof arg.boot) return site.send();
-			// 同时支持 r 路由和 path_info 路由
-			var route = qstr("r") ? qstr("r").split("/") : site.env.PATH_INFO.slice(1).split("/");
-			try { var rs = await arg.boot(route);
-			if(rs instanceof Object) rs = JSON.stringify(rs);
-			site.send(rs); } catch(e){ site.outerr(e.message); }
-			finally{ arg.closeAllDb(); arg.dbg().appendLog(); }
-		};
 		arr3.unshift("arr4 = site.out;");
-		arr3.push(`return { closeAllDb: "function" == typeof closeAllDb ? closeAllDb : 0, dbg: "function" == typeof dbg ? dbg : 0, boot: "function" == typeof boot ? boot : 0 };`);
-		eval("var func = (site, sys, qstr, form, env, include) => { " + arr3.join("\r\n") + " };");
-		var compiledFunc = function(site, sys) {
-			const { qstr, form, env, include } = aspHelper(site);
-			var arg = func(site, sys, qstr, form, env, include);
-			if(!notRun) runAsp(arg, qstr, site);
+		try { eval("var func = async (site, include, Server, Request, Response) => { " + arr3.join("\r\n") + " };"); }
+		catch(err) { site.outerr(JSON.stringify({
+			name: err.name, err: err.message, stack: err.stack
+		})); return new Function; }
+		let compiledFunc = async function(site, notRun) {
+			const { include, Server, Request, Response } = aspHelper(site);
+			await func(site, include, Server, Request, Response);
+			if(!notRun) site.send();
 		};
 		if(!notRun) site.asp.func = compiledFunc;
 		return compiledFunc;
-	}
-	try { compileAsp(site, code, notRun, args)(site, sys); } catch(err) {
-		return site.outerr(JSON.stringify({
-			name: err.name,
-			file: site.env.URL,
-			err: err.message,
-			stack: err.stack
-		}), 500);
-	}
+	};
+	(async func => {
+		try { await func(site, notRun); }
+		catch(err) {
+			site.outerr(JSON.stringify({
+				name: err.name, file: site.env.URL, err: err.message, stack: err.stack
+			}), 500);
+		}
+	})(compileAsp(site, code, notRun, args));
 }
 
 // 加载 ASP 代码，减少重复读取
@@ -266,7 +255,9 @@ function takeAspCode(site, file) {
 		for(var x in files) {
 			// 实际文件更新时间，如果文件已被删除，则认为已更新
 			var mtime = fs.existsSync(x) ? fs.statSync(x).mtime : 1;
-			if(files[x] != mtime - 0) { notModify = false; break; }
+			if(files[x] == mtime - 0) continue;
+			console.log("[" + new Date + "]", x, `被修改，重新编译${site.env.URL}。`);
+			notModify = false; break;
 		}
 		// 没有更新，直接返回 code
 		site.asp = IIS.ASP[file];
@@ -301,7 +292,6 @@ function includeFile(code, site, files = new Object) {
 // ASP 辅助方法
 function aspHelper(site) {
 	var helper = {
-		// include 方法
 		include(file, args) {
 			var fpath = path.dirname(path.join(site.host.root, site.env.URL));
 			var fname = path.join(fpath, file);
@@ -309,17 +299,23 @@ function aspHelper(site) {
 			var code = fs.readFileSync(fname, "utf8");
 			return aspParser(code, site, true, args);
 		},
-		redir(url) { return IIS.redir(site, url); },
-		qstr(k) { return !k ? site.query : site.query[k]; },
-		form(k) { return !k ? site.form : site.form[k]; },
-		env(k) { return !k ? site.env : site.env[k]; }
+		Server: { MapPath: str => site.getPath(str) },
+		Request: {
+			Form(key) { return site.form[key]; },
+			QueryString(key) { return site.query[key]; },
+			ServerVariables(key) { return site.env[key]; }
+		},
+		Response: {
+			Write(str) { site.out.push(str); },
+			Redirect(url) { IIS.redir(site, url); }
+		}
 	};
 	return helper;
 }
 
 // 初始化 Session
 function InitSession(site) {
-	var sessKey = site.sessKey ??= site.env.HTTP_ASPSESSIONID || site.req.headers.cookie?.match(/ASPSESSIONID\=(\w+)/)?.[1];
+	var sessKey = site.sessKey ??= site.req.headers.cookie?.match(/ASPSESSIONID\=(\w+)/)?.[1] || site.env.HTTP_ASPSESSIONID;
 	if(!sessKey) {
 		sessKey = site.sessKey = new Date().valueOf().toString(36).toUpperCase() + Math.random().toString(36).slice(2).toUpperCase();
 		site.res.setHeader("Set-Cookie", `ASPSESSIONID=${sessKey}; path=/; SameSite=${ site.env.HTTPS ? "None; Secure" : "Lax" }`);
