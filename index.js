@@ -1,5 +1,5 @@
 const portHttp = process.argv[2] ?? 3000;
-const portHttps = process.argv[3] ?? 4433;
+const portHttps = process.argv[3] ?? 0;		// 0 表示不启用 HTTPS
 const sites = [
 	{ domain: "default", root: "wwwroot/default", key: "ssl/localhost/key.pem", cert: "ssl/localhost/server.crt" },		// 同步版 BBS（默认站点）
 	{ domain: "127.34.56.77", root: "wwwroot/bbs-async" },	// 异步版 BBS（http://127.34.56.77:3000）
@@ -64,7 +64,7 @@ const app = (req, res) => {
 http.createServer(app).listen(portHttp);
 console.log("HTTP server running at " + portHttp);
 
-fs.stat("ssl/default/key.pem", err => {
+if(portHttps > 0) fs.stat("ssl/default/key.pem", err => {
 	if(err) return;	// 没有默认 SSL 证书，不启用 HTTPS 服务
 	let pemKey = fs.readFileSync("ssl/default/key.pem", "utf-8");
 	let pemCrt = fs.readFileSync("ssl/default/server.crt", "utf-8");
