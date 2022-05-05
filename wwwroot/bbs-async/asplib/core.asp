@@ -127,12 +127,18 @@ function SQLiteHelper(dbPath) {
 	this.beginTrans = async function() {
 		if(dbo.inTransaction) return;
 		dbo.inTransaction = true;
-		await this.none("begin transaction");
+		await new Promise((ok, no) => dbo.run("begin transaction", err => {
+			if(err) no(err);
+			else ok();
+		}));
 	};
 
 	this.commit = async function() {
 		if(!dbo.inTransaction) return;
-		await this.none("commit");
+		await new Promise((ok, no) => dbo.run("commit", err => {
+			if(err) no(err);
+			else ok();
+		}));
 		delete dbo.inTransaction;
 	};
 
@@ -171,9 +177,11 @@ function SQLiteHelper(dbPath) {
 		this.lastSql = { sql: sql, par: args };
 		// 执行 SQL 并返回受影响行数
 		return new Promise((resolve, reject) => {
-			dbo.run(sql, parseArg(args), err => {
-				if (err) return reject(err);
-				this.beginTrans().then(() => resolve(this.changes));
+			this.beginTrans().then(() => {
+				dbo.run(sql, parseArg(args), function(err) {
+					if (err) return reject(err);
+					resolve(this.changes);
+				});
 			});
 		});
 	};
@@ -242,7 +250,6 @@ function SQLiteHelper(dbPath) {
 		sql += keys.join(",") + ") values (" + vals.join(",") + ")";
 		this.lastSql = { sql: sql };
 		// 开启事务
-		// await this.none("begin transaction");
 		await this.beginTrans();
 		var stmt = dbo.prepare(sql);
 		await rows.forEach(async row => {
@@ -251,8 +258,6 @@ function SQLiteHelper(dbPath) {
 			await stmt.run(par);
 		});
 		await stmt.finalize();
-		// 提交事务
-		// await this.none("commit");
 	}
 
 	this.update = function(tablename, row, parWhere) {
@@ -288,6 +293,7 @@ function SQLiteHelper(dbPath) {
 	}
 
 	this.close = () => {
+		this.commit();
 		dbo.close();
 		delete sys.db[dbPath];
 	};
