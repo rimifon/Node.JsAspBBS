@@ -107,7 +107,7 @@ const IIS = {
 			"Content-Type": getMime(path.extname(file)),
 			"Content-Length": stat.size,
 			"Last-Modified": stat.mtime.toUTCString(),
-			"Cache-Control": "max-age=1800"
+			"Cache-Control": "max-age=2592000"
 		};
 		site.res.writeHead(200, headers);
 		fs.createReadStream(file).pipe(site.res);

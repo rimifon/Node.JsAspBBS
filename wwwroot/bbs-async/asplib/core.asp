@@ -113,43 +113,69 @@ function closeAllDb() {
 
 // SQLite DbHelper
 function SQLiteHelper(dbPath) {
-	try { var SQLite = cache.BetterSQLiteModule ??= require("better-sqlite3"); }
-	catch(e) { throw new Error("您可能需要运行一次：npm install better-sqlite3"); }
+	try { var SQLite = cache.SQLiteModule ??= require("sqlite3").verbose(); }
+	catch(e) { throw new Error("您可能需要运行一次：npm install sqlite3"); }
 	dbPath = site.getPath(dbPath);
-	var dbo = new SQLite(dbPath);
-
-	this.beginTrans = function() {
-		if(this.inTrans) return;
-		this.inTrans = true;
-		dbo.exec("begin transaction");
+	var dbo = new SQLite.Database(dbPath);
+	var parseArg = args => {
+		if(!args || args instanceof Array) return args;
+		var par = new Object;
+		for(var x in args) par["@" + x] = args[x];
+		return par;
 	};
 
-	this.commit = function() {
-		if(!this.inTrans) return;
-		this.inTrans = false;
-		dbo.exec("commit transaction");
+	this.beginTrans = async function() {
+		if(dbo.inTransaction) return;
+		dbo.inTransaction = true;
+		await this.none("begin transaction");
+	};
+
+	this.commit = async function() {
+		if(!dbo.inTransaction) return;
+		await this.none("commit");
+		delete dbo.inTransaction;
 	};
 
 	this.query = function(sql, args) {
 		this.lastSql = { sql: sql, par: args };
-		return dbo.prepare(sql).all(args || new Array);
+		return new Promise((resolve, reject) => {
+			dbo.all(sql, parseArg(args), (err, rows) => {
+				if (err) reject(err);
+				else resolve(rows);
+			});
+		});
 	};
 	
 	this.fetch = function(sql, args) {
 		this.lastSql = { sql: sql, par: args };
-		return dbo.prepare(sql).get(args || new Array);
+		return new Promise((resolve, reject) => {
+			dbo.get(sql, parseArg(args), (err, row) => {
+				if (err) reject(err);
+				else resolve(row);
+			});
+		});
 	};
 
 	this.scalar = function(sql, args) {
 		this.lastSql = { sql: sql, par: args };
-		return dbo.prepare(sql).pluck().get(args || new Array);
+		return new Promise((resolve, reject) => {
+			dbo.get(sql, parseArg(args), (err, row) => {
+				row ??= new Object;
+				if (err) reject(err);
+				else resolve(row[Object.keys(row)[0]]);
+			});
+		});
 	};
 
 	this.none = function(sql, args) {
 		this.lastSql = { sql: sql, par: args };
-		this.beginTrans();
 		// 执行 SQL 并返回受影响行数
-		return dbo.prepare(sql).run(args || new Array).changes;
+		return new Promise((resolve, reject) => {
+			dbo.run(sql, parseArg(args), err => {
+				if (err) return reject(err);
+				this.beginTrans().then(() => resolve(this.changes));
+			});
+		});
 	};
 
 	this.table = function(tablename) {
@@ -179,10 +205,10 @@ function SQLiteHelper(dbPath) {
 			return ins;
 		};
 
-		ins.page = (sort, size, page, args) => {
+		ins.page = async (sort, size, page, args) => {
 			page ??= 1; if(page < 1) page = 1;
 			var sql = ins.toString();
-			var total = this.scalar("select count(*) as value from (" + sql + ") as t", args);
+			var total = await this.scalar("select count(*) as value from (" + sql + ") as t", args);
 			var pages = Math.ceil(total / size);
 			var start = (page - 1) * size;
 			this.pager = {
@@ -204,7 +230,7 @@ function SQLiteHelper(dbPath) {
 		return ins;
 	}
 
-	this.insert = function(tablename, rows) {
+	this.insert = async function(tablename, rows) {
 		if(!(rows instanceof Array)) rows = [ rows ];
 		if(!rows[0]) return;
 		var sql = "insert into `" + tablename + "` (";
@@ -215,13 +241,18 @@ function SQLiteHelper(dbPath) {
 		}
 		sql += keys.join(",") + ") values (" + vals.join(",") + ")";
 		this.lastSql = { sql: sql };
-		this.beginTrans();
+		// 开启事务
+		// await this.none("begin transaction");
+		await this.beginTrans();
 		var stmt = dbo.prepare(sql);
-		rows.forEach(row => {
+		await rows.forEach(async row => {
 			var par = this.lastSql.par = new Object;
-			for(var k in row) par[k] = row[k];
-			stmt.run(par);
+			for(var k in row) par["@" + k] = row[k];
+			await stmt.run(par);
 		});
+		await stmt.finalize();
+		// 提交事务
+		// await this.none("commit");
 	}
 
 	this.update = function(tablename, row, parWhere) {
@@ -257,7 +288,6 @@ function SQLiteHelper(dbPath) {
 	}
 
 	this.close = () => {
-		this.commit();
 		dbo.close();
 		delete sys.db[dbPath];
 	};
