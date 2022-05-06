@@ -211,7 +211,8 @@ function aspParser(code, site, notRun = false, args = new Object) {
 		if(notRun) code = includeFile(code, site);
 		var reg = /<%[\s\S]+?%>/g;
 		// 纯html代码，纯asp代码，组合代码，输出缓冲
-		var arr1 = code.split(reg), arr2 = code.match(reg) || new Array, arr3 = new Array, arr4 = site.out;
+		const arr1 = code.split(reg), arr2 = code.match(reg) || new Array, arr3 = new Array;
+		var arr4 = site.out;
 		// 先将参数定义写入组合代码
 		var loadArg = k => args[k];
 		for(var k in args) arr3.push(`var ${k} = loadArg("${k}");`);
@@ -223,7 +224,7 @@ function aspParser(code, site, notRun = false, args = new Object) {
 			if(js.charAt(0) == "=") js = "arr4.push(" + js.slice(1) + ");";
 			arr3.push(js);
 		});
-		arr3.unshift("arr4 = site.out;");
+		arr3.unshift("arr4 = site.out;");	// 强制使用最新的缓冲区
 		try { eval("var func = async (site, include, Server, Request, Response) => { " + arr3.join("\r\n") + " };"); }
 		catch(err) { site.outerr(JSON.stringify({
 			name: err.name, err: err.message, stack: err.stack
