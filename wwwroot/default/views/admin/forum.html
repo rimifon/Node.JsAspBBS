@@ -44,7 +44,7 @@ ipt[4].onclick = function() {
 	}, function(res) {
 		if(res.err) return alert(res.err);
 		alert(res.msg);
-		location.assign(".");
+		location.assign("/");
 	});
 };
 
@@ -55,7 +55,7 @@ function dropForum() {
 	post("<%= sys.routepath %>admin/api/forumDrop", { forumid: "<%= forum.forumid %>" }, function(res) {
 		if(res.err) return alert(res.err);
 		alert(res.msg);
-		location.assign(".");
+		location.assign("/");
 	});
 }
 </script>

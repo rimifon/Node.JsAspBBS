@@ -52,7 +52,7 @@
 			<span class="ipt">用户名：<input class="ipt" name="user" placeholder="用户账号" /> &nbsp;</span>
 			<span class="ipt">密 &nbsp;码：<input class="ipt" name="pass" type="password" placeholder="登录密码" /> &nbsp;</span>
 			<span class="for-web">登录到：<select name="redir">
-				<option value=".">论坛首页</option><% for(var i = 0; i < forums.length; i++) { var x = forums[i]; %>
+				<option value="/">论坛首页</option><% for(var i = 0; i < forums.length; i++) { var x = forums[i]; %>
 				<optgroup label="<%= x.nick %>"><% for(var c = 0; c < x.list.length; c++) { var r = x.list[c]; %>
 					<option value="<%= sys.routepath %>forum/<%= r.forumid %>"><%= r.nick %></option><% } %>
 				</optgroup><% } %>
