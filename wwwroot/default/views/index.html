@@ -59,7 +59,7 @@
 			</select> &nbsp;</span>
 			<input type="button" value=" 登  录 " /> &nbsp;
 			<a href="<%= sys.routepath %>register">注册新用户</a><% } else { if(me().roleid > 6) { %>
-			<a href="<%= sys.routepath %><%= sys.routepath %>admin/forum/0" class="fr add-forum"></a><% } %>
+			<a href="<%= sys.routepath %>admin/forum/0" class="fr add-forum"></a><% } %>
 			昵称：<%= me().nick %>，发帖量：<%= me().fatie %>，积分：<%= me().jifen %><span class="for-web">，身份：<%= roles[me().roleid] %>，
 			登录时间：<%= tojson(me().lasttime).slice(1, -1) %>，<a href="<%= sys.routepath %>logout">退出登录</a></span><% } %>
 		</div>
