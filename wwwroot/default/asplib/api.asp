@@ -31,7 +31,6 @@ async function apidoc(root, route, noFmt) {
 		var apipath = routeMode ? env("URL") : "?r=";
 		apipath += routeMode ? env("PATH_INFO") : qstr("r");
 		sys.apipath = apipath.replace(/\/+$/g, "") + "/";
-		if(sys.hideApiFunc) Function.prototype.toString = function() { return "function() { [ native code ] }"; };
 		%><!-- #include file="views/apidoc.html" --><%
 	}
 

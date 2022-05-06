@@ -29,8 +29,18 @@ dl:hover dd tt:after{ content: '「执行」' }
 .ipt p input{ width: 100%; border: none }
 </style></head><body>
 <h1><%= sys.name %> API 文档</h1>
-<%= (this.Memo || []).join("<br />") %>
-<% for(var x in this) {
+<%= (this.Memo || []).join("<br />") %><%
+var showSource = func => {
+	if(sys.hideApiFunc) return "function() { [ native code ] }";
+	// 判断最后一个 } 字符前面的 tab 数量
+	func = func.replace(/(^\s+|\s+$)/g, "");
+	var tabs = func.match(/\t*\}$/)?.[0];
+	if(!tabs) return func;
+	if(tabs.length - 1 < 1) return func;
+	var reg = new RegExp("\\n\\t{" + (tabs.length - 1) + "}", "g");
+	return func.replace(reg, "\n");
+}
+for(var x in this) {
 	if(x.slice(-3) != "Doc") continue;
 	var doc = this[x], intro = doc.slice(2);
 	var apiname = x.slice(0, -3); %>
@@ -40,7 +50,7 @@ dl:hover dd tt:after{ content: '「执行」' }
 	<dd><%= intro[y] %></dd><% } %>
 	<dd>
 		[<u>检视源码</u>] <tt></tt>
-		<div class="hide"><pre><code class="language-javascript"><%= (this[apiname.toLowerCase()] + "").replace(/\n\t\t/g, "\n") %></code></pre></div>
+		<div class="hide"><pre><code class="language-javascript"><%= showSource(this[apiname.toLowerCase()] + "") %></code></pre></div>
 	</dd>
 </dl><% } %>
 <div class="win hide">
