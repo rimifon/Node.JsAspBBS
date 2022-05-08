@@ -7,4 +7,6 @@
 	<a href="?r=sub/async" target="_blank">测试异步处理</a>，
 	<a href="default.asp/test" target="_blank">一个比较卡的页面</a>
 	<p>网站计数：<%= cc().pv %>，我的SessionID：<%= ss().sessId %></p>
+	<p>WebSocket状态：<%= hasSocket ? "已启用".fontcolor("green").link("/ws.html") : "未启用".fontcolor("gray") %></p><% if(hasSocket) { %>
+	<p><%= socket.info(env("HTTP_HOST")) %></p><% } %>
 </div>

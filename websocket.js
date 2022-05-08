@@ -1,15 +1,16 @@
 var WS = require("ws").Server;
-var nmb = 0, rooms = new Object, errors = new Array;
+var hosts = new Object, errors = new Array;
 function bindServer(server) {
-	new WS({ server }).on("connection", skt => {
+	new WS({ server }).on("connection", (skt, req) => {
 		skt.on("message", res => user.onMsg(res));
 		skt.on("close", res => user.exit(res));
 		skt.on("error", res => console.log("error", res));
-		var user = new ChatUser(skt);
+		var user = new ChatUser(skt, req);
 	});
 }
 
-function ChatUser(socket) {
+function ChatUser(socket, req) {
+	var rooms = hosts[req.headers.host] ??= new Object;
 	this.onMsg = function(msg) {
 		var res; try { res = JSON.parse(msg); }
 			catch(err) { res = { type: "notjson", data: msg } };
@@ -75,13 +76,15 @@ function ChatUser(socket) {
 	};
 }
 
-function roomInfo() {
+function roomInfo(host) {
+	host ??= Object.keys(hosts)[0];
 	var arr = new Array, cnt = 0;
+	var rooms = hosts[host] ?? new Object;
 	for(var x in rooms) { arr.push(x + "（共 " + rooms[x].count + " 人在线）"); cnt += rooms[x].count; }
 	return arr.length + "个聊天室（共 " + cnt + " 人在线）<br />" + arr.join("<br />") + "<br />" 
-		+ " [访问计数：" + (++nmb) + "]<br />" + "意外信息：<br />" + errors.join("<br />");
+		+ "意外信息：<br />" + errors.join("<br />");
 }
 module.exports = {
 	bind: server => bindServer(server),
-	info: () => roomInfo()
+	info: host => roomInfo(host)
 };

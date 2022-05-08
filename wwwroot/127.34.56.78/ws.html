@@ -1,0 +1,98 @@
+
+<!doctype html><html lang="zh"><head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<meta name="viewport" content="user-scalable=0" />
+<title>测试 NodeJsAsp WebSocket 聊天</title>
+<style type="text/css">
+body{ font: 2vh/3vh arial; margin: 0mm }
+.chat{ height: calc(100vh - 7vh); overflow: auto; padding: 1vh 2vh }
+.ipt{ height: 3vh; padding: 1vh 1.5vh; background-color: #ddd }
+.ipt input{ border: none; width: 100%; font: 2vh/3vh arial; height: 3vh; vertical-align: center; outline: none }
+</style></head><body>
+<div class="chat"></div>
+<div class="ipt"><input placeholder="说些什么" /></div>
+
+<script type="text/javascript">
+var ipt = document.querySelector(".ipt input");
+ipt.onkeypress = function(e) {
+	if(e.keyCode != 13) return;
+	if(!ipt.value) return;
+	// chat.send(/^有人[？吗没\?]/.test(ipt.value) ? { type: "users" } : { data: { nick: chat.nick, msg: ipt.value }, type: "chat" });  // 私聊to: "1"
+	if(/^有人[？吗没\?]/.test(ipt.value)){
+		chat.send({ type: "users" });
+	}else if(/^时间/.test(ipt.value)){
+		chat.send({ type: "nowtime" });
+	}else{
+		chat.send({ data: { nick: chat.nick, msg: ipt.value }, type: "chat" });
+	}
+	ipt.value = "";
+};
+
+var chat = new function() {
+	var tagChat = document.querySelector(".chat");
+	this.onMessage = function(rs) {
+		try { rs = JSON.parse(rs); }
+		catch(err) { rs = { err: rs } }
+		switch(rs.type) {
+			case "chat": break;
+			case "join": return this.userid = rs.data;
+			case "welcome": return welcome(rs.data);
+			case "notjson": return console.log(rs.data);
+			case "users": showUsers(rs); break;
+			case "nowtime": nowtime(); break;
+			default: return console.log(rs);
+		}
+		var tag = newTag("div");
+		tag.innerHTML = (rs.data.nick + "：").fontcolor("red") + rs.data.msg;
+		tag.scrollIntoView();
+		if(tagChat.childNodes.length > 999) tagChat.removeChild(tagChat.firstChild);
+	};
+
+	this.joinRoom = function() {
+		this.nick = "赵钱孙李周吴郑王冯陈褚卫蒋沈韩杨朱秦尤许何吕施张孔曹严华金魏陶姜".charAt(Math.floor(Math.random() * 32));
+		this.nick += randNick(Math.ceil(Math.random() * 2), new Array).join("");
+		this.send({ data: { room: "1号聊天室", nick: this.nick }, type: "join" });
+	};
+
+	function randNick(num, arr) {
+		arr.push(String.fromCharCode(Math.round(Math.random() * 20901) + 19968));
+		return arr.length < num ? randNick(num, arr) : arr;
+	}
+
+	this.send = function(msg) { return ws.send(JSON.stringify(msg)); }
+
+	this.close = function() {
+		var tag = newTag("div");
+		tag.innerHTML = this.nick + "掉线了";
+		tag.scrollIntoView();
+	};
+
+	function showUsers(rs) {
+		var users = rs.data, arr = new Array;
+		for(var x in users) arr.push((users[x].nick || "Anonymous").fontcolor("blue"));
+		rs.data = { msg: arr.join("、") + "，共 " + arr.length + " 人。", nick: "用户列表" }
+	}
+
+	function welcome(user) {
+		var tag = newTag("div");
+		tag.innerHTML = "欢迎【" + user.nick + "】来到【" + user.room + "】，当前 " + user.count + " 人聊天中。";
+		tag.scrollIntoView();
+	}
+
+	function newTag(t, p, cls) {
+		var tag = document.createElement(t);
+		if(cls) tag.className = cls;
+		return (p || tagChat).appendChild(tag);
+	}
+
+	function nowtime() {
+		return new Date().toLocaleTimeString();
+	}
+};
+
+var ws = new WebSocket("ws://" + location.host);
+ws.onmessage = function(e) { chat.onMessage(e.data); };
+ws.onopen = function() { chat.joinRoom(); };
+ws.onclose = function() { chat.close(); };
+</script>
+</body></html>

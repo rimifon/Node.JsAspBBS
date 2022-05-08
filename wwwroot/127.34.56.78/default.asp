@@ -4,6 +4,7 @@ function boot(route) {
 	return apidoc({
 		index() {
 			sys.title = "网站首页";
+			var hasSocket = "object" == typeof socket;
 			return master(function() { %><!-- #include file="views/default.html" --><% });
 		}
 		,sub: {

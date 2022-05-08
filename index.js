@@ -63,7 +63,7 @@ const app = (req, res) => {
 };
 
 // 启用 WebSocket 需要：npm install ws 模块
-//const socket = require("./websocket");
+// const socket = require("./websocket");
 var svrHttp = http.createServer(app);
 svrHttp.listen(portHttp);
 // socket.bind(svrHttp);
