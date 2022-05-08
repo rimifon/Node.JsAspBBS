@@ -13,18 +13,18 @@ function ChatUser(socket, req) {
 	var rooms = hosts[req.headers.host] ??= new Object;
 	this.onMsg = function(msg) {
 		var res; try { res = JSON.parse(msg); }
-			catch(err) { res = { type: "notjson", data: msg } };
-			if(res.type == "join") return this.doJoin(res);
-			if(!this.room) this.send({ type: "error", data: "需要先加入房间" });
-			if(res.type == "users") return this.getUsers();
-			res.to ? this.sendTo(res.to, res) : this.sendAll(res);
-		};
+		catch(err) { res = { type: "notjson", data: msg } };
+		if(res.type == "join") return this.doJoin(res);
+		if(!this.room) this.send({ type: "error", data: "需要先加入房间" });
+		if(res.type == "users") return this.getUsers();
+		res.to ? this.sendTo(res.to, res) : this.sendAll(res);
+	};
 	this.getUsers = function() {
-			if(!this.room) return;
-			var users = new Object;
-			for(var x in this.room.users) users[x] = this.room.users[x].info;
-			this.send({ data: users, type: "users" });
-		};
+		if(!this.room) return;
+		var users = new Object;
+		for(var x in this.room.users) users[x] = this.room.users[x].info;
+		this.send({ data: users, type: "users" });
+	};
 	this.doJoin = function(msg) {
 		if(this.room) return this.send({ type: "error", data: "您已在聊天室【" + this.room.name + "】中" });
 		msg = msg.data || new Object;
@@ -39,7 +39,7 @@ function ChatUser(socket, req) {
 		this.sendAll({ type: "welcome", data: msg });
 		delete msg.count; delete msg.room;
 	};
-	this.exit = function(msg) {
+	this.exit = function() {
 		var room = this.room;
 		if(!room) return;
 		delete room.users[this.id];
@@ -62,7 +62,7 @@ function ChatUser(socket, req) {
 		for(var x in room.users) queue.push(room.users[x]);
 		while(queue.length) queue.shift().send(msg);
 	};
-	this.ensure = function(func, type, msg) {
+	this.ensure = function(func, type) {
 		if(socket.readyState == 2 && type == "send") return this.exit(1006);
 		if(socket.readyState != 1 && type == "send") console.log(socket.readyState);
 		try { func(); } catch(err) { this.logError(err.message, type); }
@@ -86,5 +86,10 @@ function roomInfo(host) {
 }
 module.exports = {
 	bind: server => bindServer(server),
+	all: () => {
+		let all = new Object;
+		for(let x in hosts) all[x] = roomInfo(x);
+		return all;
+	},
 	info: host => roomInfo(host)
 };
