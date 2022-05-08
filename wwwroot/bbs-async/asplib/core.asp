@@ -97,7 +97,7 @@ function ensureDir(dir) {
 }
 
 function db(dbPath) {
-	dbPath ??= sys.dbPath || "/App_Data/sqlite.db";
+	dbPath ??= sys.dbPath || "app_data.db";
 	sys.db ??= new Object;
 	if(sys.db[dbPath]) return sys.db[dbPath];
 	return sys.db[dbPath] = new SQLiteHelper(dbPath);
