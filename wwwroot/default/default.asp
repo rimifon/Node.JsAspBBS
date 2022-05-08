@@ -1,5 +1,4 @@
 <!-- #include virtual="/asplib/api.asp" --><%
-function getSite() { return site; }
 function boot(route) {
 	sys.name = "Node.JsAspBBS";
 	sys.res = "/res/bbs/";

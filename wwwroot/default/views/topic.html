@@ -167,18 +167,20 @@ var editor = new function() {
 		if(this.target) this.target.replaceChild(this.oldtag, tag);
 		this.target = ele.parentNode; this.oldtag = ele;
 		this.target.replaceChild(tag, ele);
-		txt[0].defaultValue = "";
-		txt[0].innerHTML = str;
+		var newTxt = document.createElement("textarea");
+		newTxt.innerHTML = str;
+		div.replaceChild(newTxt, div.lastChild);
 		this.replyid = replyid;
 	};
 	var tag = document.querySelector(".editor");
 	var txt = tag.querySelectorAll("textarea, input");
+	var div = txt[0].parentNode;
 	txt[1].onclick = function() {
 		me.target.replaceChild(me.oldtag, tag);
 		delete me.target; delete me.oldtag;
 	};
 	txt[2].onclick = function() {
-		post("<%= sys.routepath %>api/replyEdit", { replyid: me.replyid, message: txt[0].value }, function(res) {
+		post("<%= sys.routepath %>api/replyEdit", { replyid: me.replyid, message: div.lastChild.value }, function(res) {
 			if(res.err) return alert(res.err);
 			alert(res.msg); location.reload();
 		});
