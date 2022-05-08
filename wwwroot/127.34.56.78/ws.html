@@ -33,7 +33,6 @@ var chat = new function() {
 			case "welcome": return welcome(rs.data);
 			case "notjson": return console.log(rs.data);
 			case "users": showUsers(rs); break;
-			case "nowtime": nowtime(); break;
 			default: return console.log(rs);
 		}
 		var tag = newTag("div");
@@ -77,10 +76,6 @@ var chat = new function() {
 		var tag = document.createElement(t);
 		if(cls) tag.className = cls;
 		return (p || tagChat).appendChild(tag);
-	}
-
-	function nowtime() {
-		return new Date().toLocaleTimeString();
 	}
 };
 
