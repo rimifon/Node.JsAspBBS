@@ -205,7 +205,8 @@ async function boot(route) {
 				if(!forumid) return { err: "缺少版块ID" };
 				form().title = html(form().title);
 				form().message = html(form().message);
-				if(form().message.length > 4000) return { err: "内容太长，请尝试减少内容。" };
+				var lenStr = form().message.length - 4000;
+				if(lenStr > 0) return { err: "内容太长，请尝试减少" + lenStr + "个字符。" };
 				// 插入主题表
 				await db().insert("topic", { title: form().title, forumid: forumid, userid: me().userid });
 				var topicid = await db().scalar("select last_insert_rowid()");
