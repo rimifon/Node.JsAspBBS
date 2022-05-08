@@ -75,8 +75,7 @@ function ChatUser(socket) {
 	};
 }
 
-function roomInfo(rep) {
-	rep.writeHead(200, { "Content-Type" : "text/html; Charset=UTF-8" });
+function roomInfo() {
 	var arr = new Array, cnt = 0;
 	for(var x in rooms) { arr.push(x + "（共 " + rooms[x].count + " 人在线）"); cnt += rooms[x].count; }
 	return arr.length + "个聊天室（共 " + cnt + " 人在线）<br />" + arr.join("<br />") + "<br />" 
