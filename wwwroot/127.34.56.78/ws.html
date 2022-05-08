@@ -79,7 +79,7 @@ var chat = new function() {
 	}
 };
 
-var ws = new WebSocket("ws://" + location.host);
+var ws = new WebSocket(location.protocol.replace("http", "ws") + "//" + location.host);
 ws.onmessage = function(e) { chat.onMessage(e.data); };
 ws.onopen = function() { chat.joinRoom(); };
 ws.onclose = function() { chat.close(); };
