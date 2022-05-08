@@ -17,14 +17,8 @@ var ipt = document.querySelector(".ipt input");
 ipt.onkeypress = function(e) {
 	if(e.keyCode != 13) return;
 	if(!ipt.value) return;
-	// chat.send(/^有人[？吗没\?]/.test(ipt.value) ? { type: "users" } : { data: { nick: chat.nick, msg: ipt.value }, type: "chat" });  // 私聊to: "1"
-	if(/^有人[？吗没\?]/.test(ipt.value)){
-		chat.send({ type: "users" });
-	}else if(/^时间/.test(ipt.value)){
-		chat.send({ type: "nowtime" });
-	}else{
-		chat.send({ data: { nick: chat.nick, msg: ipt.value }, type: "chat" });
-	}
+	if(/^有人[？吗没\?]/.test(ipt.value)) chat.send({ type: "users" });
+	else chat.send({ data: { nick: chat.nick, msg: ipt.value }, type: "chat" });
 	ipt.value = "";
 };
 
