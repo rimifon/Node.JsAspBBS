@@ -61,7 +61,12 @@ const app = (req, res) => {
 	};
 
 };
-http.createServer(app).listen(portHttp);
+
+// 启用 WebSocket 需要：npm install ws 模块
+//const socket = require("./websocket");
+var svrHttp = http.createServer(app);
+svrHttp.listen(portHttp);
+// socket.bind(svrHttp);
 console.log("HTTP server running at " + portHttp);
 
 if(portHttps > 0) fs.stat("ssl/default/key.pem", err => {
@@ -77,7 +82,9 @@ if(portHttps > 0) fs.stat("ssl/default/key.pem", err => {
 			return cb(null, tls.createSecureContext({ key, cert }));
 		}, key: pemKey, cert: pemCrt
 	};
-	https.createServer(ssl, app).listen(portHttps);
+	var svrHttps = https.createServer(ssl, app);
+	// socket.bind(svrHttps);
+	svrHttps.listen(portHttps);
 	console.log("HTTPS server running at " + portHttps);
 });
 

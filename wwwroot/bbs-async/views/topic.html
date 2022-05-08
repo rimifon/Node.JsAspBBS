@@ -180,7 +180,7 @@ var editor = new function() {
 		delete me.target; delete me.oldtag;
 	};
 	txt[2].onclick = function() {
-		post("<%= sys.routepath %>api/replyEdit", { replyid: me.replyid, message: div.lastChild.value }, function(res) {
+		post("?r=api/replyEdit", { replyid: me.replyid, message: div.lastChild.value }, function(res) {
 			if(res.err) return alert(res.err);
 			alert(res.msg); location.reload();
 		});
