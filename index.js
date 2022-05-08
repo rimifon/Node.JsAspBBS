@@ -41,7 +41,7 @@ const app = (req, res) => {
 	};
 	// 禁止访问 app_data 目录
 	if(/app_data/i.test(site.env.URL)) return site.outerr("403 Forbidden", 403);
-	// 禁止访问 .. 目录
+	// 禁止访问 .. 路径
 	if(/[\\\/]\.+[\\\/]/.test(site.env.URL)) return site.outerr("403 Forbidden", 403);
 	// 获取目录相对位置（根目录还是请求目录）
 	site.getPath = file => path.join(file[0] == "/" ? host.root : path.dirname(path.join(host.root, site.env.URL)), file);
