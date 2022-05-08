@@ -67,8 +67,8 @@ function ChatUser(socket) {
 		try { func(); } catch(err) { this.logError(err.message, type); }
 	};
 	this.logError = function(msg, type) {
-		errors.unshift(tojson({
-			time: new Date().toISOString(),
+		errors.unshift(JSON.stringify({
+			time: new Date,
 			type: type, err: msg, user: this.info.nick || this.id
 		}));
 		if(errors.length > 30) errors.length = 30;
@@ -83,5 +83,5 @@ function roomInfo() {
 }
 module.exports = {
 	bind: server => bindServer(server),
-	info: rep => roomInfo(rep)
+	info: () => roomInfo()
 };
