@@ -17,6 +17,7 @@ function ChatUser(socket, req) {
 		if(res.type == "join") return this.doJoin(res);
 		if(!this.room) this.send({ type: "error", data: "需要先加入房间" });
 		if(res.type == "users") return this.getUsers();
+		if(res.type == "noop") return this.send({ type: "noop", data: new Date });
 		res.to ? this.sendTo(res.to, res) : this.sendAll(res);
 	};
 	this.getUsers = function() {
