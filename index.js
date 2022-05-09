@@ -220,19 +220,18 @@ function aspParser(code, site, notRun = false, args = new Object) {
 		var reg = /<%[\s\S]+?%>/g;
 		// 纯html代码，纯asp代码，组合代码，输出缓冲
 		const arr1 = code.split(reg), arr2 = code.match(reg) || new Array, arr3 = new Array;
-		var arr4 = site.out;
 		// 先将参数定义写入组合代码
-		var loadArg = k => args[k];
-		for(var k in args) arr3.push(`var ${k} = loadArg("${k}");`);
-		var blockWrite = i => arr4.push(arr1[i]);	// 写入缓冲
+		const output = { loadArg: k => args[k] };
+		for(var k in args) arr3.push(`var ${k} = output.loadArg("${k}");`);
+		output.blockWrite = i => output.buffer.push(arr1[i]);	// 写入缓冲
 		arr1.forEach((v, i) => {
-			if(v) arr3.push("blockWrite(" + i + ");");
+			if(v) arr3.push("output.blockWrite(" + i + ");");
 			var js = arr2[i]?.slice(2, -2).replace(/(^\s+|\s+$)/g, "");
 			if(!js) return;
-			if(js.charAt(0) == "=") js = "arr4.push(" + js.slice(1) + ");";
+			if(js.charAt(0) == "=") js = "output.buffer.push(" + js.slice(1) + ");";
 			arr3.push(js);
 		});
-		arr3.unshift("arr4 = site.out;");	// 强制使用最新的缓冲区
+		arr3.unshift("output.buffer = site.out;");	// 强制使用最新的缓冲区
 		try { eval("var func = async (site, include, Server, Request, Response) => { " + arr3.join("\r\n") + " };"); }
 		catch(err) { site.outerr(JSON.stringify({
 			name: err.name, err: err.message, stack: err.stack

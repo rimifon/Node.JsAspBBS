@@ -8,10 +8,11 @@ function boot(route) {
 			return master(function() { %><!-- #include file="views/default.html" --><% });
 		}
 		,sub: {
-			test() {
+			TestDoc: [ "测试API" ]
+			,test() {
 				return { msg: "你好", now: sys.sTime };
 			}
-			// 测试异步
+			,AsyncDoc: [ "测试异步API" ]
 			,async() {
 				return new Promise(ok => {
 					setTimeout(() => {
