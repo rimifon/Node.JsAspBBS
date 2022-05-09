@@ -18,7 +18,7 @@ const path = require("path");
 process.chdir(__dirname);
 const app = (req, res) => {
 	const { pathname, query } = url.parse(req.url, true);
-	const hostname = req.headers.host.replace(/\:\d+$/, "");
+	const hostname = req.headers.host?.replace(/\:\d+$/, "") || "default";
 	var host = sites.find(s => s.domain == hostname) || sites[0];	// 默认为第一个站点
 	var site = { host, out: new Array, req, res, query };
 	var paths = pathname.split(/\.asp(?=\/)/);
@@ -258,8 +258,12 @@ function aspParser(code, site, notRun = false, args = new Object) {
 // 加载 ASP 代码，减少重复读取
 function takeAspCode(site, file) {
 	IIS.ASP ??= new Object;
-	if(IIS.ASP[file]) {
-		let files = IIS.ASP[file].files, notModify = true;
+	site.asp = IIS.ASP[file];
+	if(site.asp) {
+		// 3 秒内不重复检测文件更新
+		if(site.asp.checkTime > new Date - 3e3) return site.asp.code;
+		site.asp.checkTime = new Date - 0;
+		let files = site.asp.files, notModify = true;
 		// 判断每个文件是否有更新
 		for(var x in files) {
 			// 实际文件更新时间，如果文件已被删除，则认为已更新
@@ -269,13 +273,12 @@ function takeAspCode(site, file) {
 			notModify = false; break;
 		}
 		// 没有更新，直接返回 code
-		site.asp = IIS.ASP[file];
-		if(notModify) return IIS.ASP[file].code;
+		if(notModify) return site.asp.code;
 	}
-	site.asp = IIS.ASP[file] = { files: new Object };
-	IIS.ASP[file].files[file] = fs.statSync(file).mtime - 0;
+	site.asp = IIS.ASP[file] = { files: new Object, checkTime: new Date - 0 };
+	site.asp.files[file] = fs.statSync(file).mtime - 0;
 	// 读取文件
-	return IIS.ASP[file].code = includeFile(fs.readFileSync(file, "utf-8"), site, IIS.ASP[file].files);
+	return site.asp.code = includeFile(fs.readFileSync(file, "utf-8"), site, site.asp.files);
 }
 
 // 处理包含指令
