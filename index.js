@@ -225,15 +225,14 @@ function aspParser(code, site, notRun = false, args = new Object) {
 		output.asp = code.match(regAsp) || new Array;
 		output.code = new Array;
 		for(var k in args) output.code.push(`var ${k} = output.loadArg("${k}");`);
-		output.blockWrite = i => output.buffer.push(output.html[i]);	// 写入缓冲
+		output.blockWrite = (i, Response) => Response.Write(output.html[i]);	// 写入缓冲
 		output.html.forEach((v, i) => {
-			if(v) output.code.push("output.blockWrite(" + i + ");");
+			if(v) output.code.push("output.blockWrite(" + i + ", Response);");
 			var js = output.asp[i]?.slice(2, -2).replace(/(^\s+|\s+$)/g, "");
 			if(!js) return;
-			if(js.charAt(0) == "=") js = "output.buffer.push(" + js.slice(1) + ");";
+			if(js.charAt(0) == "=") js = "Response.Write(" + js.slice(1) + ");";
 			output.code.push(js);
 		});
-		output.code.unshift("output.buffer = site.out;");	// 强制使用最新的缓冲区
 		try { eval("var func = async (site, include, Server, Request, Response) => { " + output.code.join("\r\n") + " };"); }
 		catch(err) { site.outerr(JSON.stringify({
 			name: err.name, err: err.message, stack: err.stack
@@ -317,8 +316,7 @@ function aspHelper(site) {
 			CreateObject: progid => {
 				const func = () => func;
 				func.toString = () => `[${progid}]暂未实现`;
-				var obj = { func };
-				return new Proxy(obj, { get: () => func });
+				return new Proxy(func, { get: o => o });
 			 },
 			Transfer(url, args) { return this.Execute(url, args); },
 			Execute(file, args = new Object) { return helper.include(file, args); }

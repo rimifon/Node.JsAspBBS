@@ -41,8 +41,12 @@ var chat = new function() {
 	};
 
 	this.joinRoom = function() {
-		this.nick = "赵钱孙李周吴郑王冯陈褚卫蒋沈韩杨朱秦尤许何吕施张孔曹严华金魏陶姜".charAt(Math.floor(Math.random() * 32));
-		this.nick += randNick(Math.ceil(Math.random() * 2), new Array).join("");
+		if(!this.nick) this.nick = sessionStorage.getItem("nick");
+		if(!this.nick) {
+			this.nick = "赵钱孙李周吴郑王冯陈褚卫蒋沈韩杨朱秦尤许何吕施张孔曹严华金魏陶姜".charAt(Math.floor(Math.random() * 32));
+			this.nick += randNick(Math.ceil(Math.random() * 2), new Array).join("");
+			sessionStorage.setItem("nick", this.nick);
+		}
 		this.send({ data: { room: "1号聊天室", nick: this.nick }, type: "join" });
 	};
 
@@ -78,9 +82,16 @@ var chat = new function() {
 	}
 };
 
-var ws = new WebSocket(location.protocol.replace("http", "ws") + "//" + location.host);
-ws.onmessage = function(e) { chat.onMessage(e.data); };
-ws.onopen = function() { chat.joinRoom(); };
-ws.onclose = function() { chat.close(); };
+function connWS(num) {
+	self.ws = new WebSocket(location.protocol.replace("http", "ws") + "//" + location.host);
+	ws.onmessage = function(e) { chat.onMessage(e.data); };
+	ws.onopen = function() { chat.joinRoom(); };
+	ws.onclose = function(e) {
+		chat.close();
+		if(e.wasClean || e.code != 1006) return;
+		setTimeout(function() { connWS(num); }, 1000 * ++num);
+	};
+}
+connWS(0);
 </script>
 </body></html>
