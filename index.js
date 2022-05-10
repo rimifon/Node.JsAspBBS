@@ -217,22 +217,24 @@ function aspParser(code, site, notRun = false, args = new Object) {
 		if(!notRun && site.asp.func) return site.asp.func;
 		// inlude 方法加载时需要重新解析 #include 指令
 		if(notRun) code = includeFile(code, site);
-		var reg = /<%[\s\S]+?%>/g;
-		// 纯html代码，纯asp代码，组合代码，输出缓冲
-		const arr1 = code.split(reg), arr2 = code.match(reg) || new Array, arr3 = new Array;
+		let regAsp = /<%[\s\S]+?%>/g;
 		// 先将参数定义写入组合代码
 		const output = { loadArg: k => args[k] };
-		for(var k in args) arr3.push(`var ${k} = output.loadArg("${k}");`);
-		output.blockWrite = i => output.buffer.push(arr1[i]);	// 写入缓冲
-		arr1.forEach((v, i) => {
-			if(v) arr3.push("output.blockWrite(" + i + ");");
-			var js = arr2[i]?.slice(2, -2).replace(/(^\s+|\s+$)/g, "");
+		// 纯html代码，纯asp代码，组合代码
+		output.html = code.split(regAsp);
+		output.asp = code.match(regAsp) || new Array;
+		output.code = new Array;
+		for(var k in args) output.code.push(`var ${k} = output.loadArg("${k}");`);
+		output.blockWrite = i => output.buffer.push(output.html[i]);	// 写入缓冲
+		output.html.forEach((v, i) => {
+			if(v) output.code.push("output.blockWrite(" + i + ");");
+			var js = output.asp[i]?.slice(2, -2).replace(/(^\s+|\s+$)/g, "");
 			if(!js) return;
 			if(js.charAt(0) == "=") js = "output.buffer.push(" + js.slice(1) + ");";
-			arr3.push(js);
+			output.code.push(js);
 		});
-		arr3.unshift("output.buffer = site.out;");	// 强制使用最新的缓冲区
-		try { eval("var func = async (site, include, Server, Request, Response) => { " + arr3.join("\r\n") + " };"); }
+		output.code.unshift("output.buffer = site.out;");	// 强制使用最新的缓冲区
+		try { eval("var func = async (site, include, Server, Request, Response) => { " + output.code.join("\r\n") + " };"); }
 		catch(err) { site.outerr(JSON.stringify({
 			name: err.name, err: err.message, stack: err.stack
 		})); return new Function; }
@@ -310,7 +312,17 @@ function aspHelper(site) {
 			var code = fs.readFileSync(fname, "utf8");
 			return aspParser(code, site, true, args);
 		},
-		Server: { MapPath: str => site.getPath(str) },
+		Server: {
+			MapPath: str => site.getPath(str),
+			CreateObject: progid => {
+				const func = () => func;
+				func.toString = () => `[${progid}]暂未实现`;
+				var obj = { func };
+				return new Proxy(obj, { get: () => func });
+			 },
+			Transfer(url, args) { return this.Execute(url, args); },
+			Execute(file, args = new Object) { return helper.include(file, args); }
+		},
 		Request: {
 			Form(key) { return site.form[key]; },
 			QueryString(key) { return site.query[key]; },
