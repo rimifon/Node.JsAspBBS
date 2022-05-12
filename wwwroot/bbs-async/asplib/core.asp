@@ -42,7 +42,7 @@ function tojson(obj) { return JSON.stringify(obj); }
 function fromjson(str) { return JSON.parse(str); }
 function redir(url) { Response.Redirect(url); }
 function mappath(path) { return Server.MapPath(path); }
-function qstr(k) { return !k ? site.query : site.query[k]; }
+function qstr(k) { return !k ? { ...site.query } : site.query[k]; }
 function form(k) { return !k ? site.form : site.form[k]; }
 function env(k) { return !k ? site.env : site.env[k]; }
 

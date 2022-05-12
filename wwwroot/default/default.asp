@@ -119,7 +119,7 @@ function boot(route) {
 				if(x.replynum < 12) return "";
 				var arr = new Array;
 				var page = Math.ceil((x.replynum + 1) / 12);
-				for(var i = 1; i <= page; i++) arr.push(i.toString().link(sys.routepath + "?topic/" + x.topicid + "/" + i));
+				for(var i = 1; i <= page; i++) arr.push(i.toString().link(sys.routepath + "topic/" + x.topicid + "/" + i));
 				if(page > 7) arr.splice(3, page - 6, "……");
 				return " [第 " + arr.join(" ") + " 页]";
 			};
