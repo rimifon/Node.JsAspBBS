@@ -51,7 +51,7 @@ table td p{ white-space: nowrap; margin: 0mm }
 			</tr><% last.forEach(function(x) { %>
 			<tr>
 				<td><%= x[0] %></td>
-				<td><%= x[1] %></td>
+				<td><%= html(x[1]) %></td>
 				<td><%= x[2] %></td>
 				<td><%= x[5] %>ms</td>
 				<td><%= x[3] %></td>
@@ -67,7 +67,7 @@ table td p{ white-space: nowrap; margin: 0mm }
 				<th>路由</th><th>耗时</th><th>方式</th><th>路径</th><th>请求IP</th><th>发生时间</th>
 			</tr><% slow.forEach(function(x) { %>
 			<tr>
-				<td><%= x[2] %></td>
+				<td><%= html(x[2]) %></td>
 				<td><%= x[5] %>ms</td>
 				<td><%= x[0] %></td>
 				<td><%= x[1] %></td>
@@ -84,12 +84,12 @@ table td p{ white-space: nowrap; margin: 0mm }
 				<th>路由</th><th>耗时</th><th>方式</th><th>路径</th><th>发生时间</th>
 			</tr><% logs.forEach(function(x) { %>
 			<tr>
-				<td><%= x.info[2] %></td>
+				<td><%= html(x.info[2] || "") %></td>
 				<td><%= x.info[4] %>ms</td>
 				<td><%= x.info[0] %></td>
 				<td>
 					<%= x.info[1] %><% x.rows.forEach(function(y) { %>
-					<br /><%= y[0] %>[<%= y[1] %>ms]<% }); %>
+					<br /><%= html(y[0]) %>[<%= y[1] %>ms]<% }); %>
 				</td>
 				<td><p><%= x.info[3] %></p></td>
 			</tr><% }); %>
