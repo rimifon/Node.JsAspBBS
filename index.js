@@ -6,7 +6,7 @@ const sites = [
 	{ domain: "127.34.56.78", root: "wwwroot/127.34.56.78" }	// 测试站点（http://127.34.56.78:3000）
 ];
 const proxy = {
-	// "127.0.0.1": { host: "bbs.fengyun.org", port: 80 }
+	// "localhost": { host: "fengyun.org", hostname: "bbs.fengyun.org", port: 80, protocol : "http" }
 };
 const indexPages = [ "index.html", "default.asp" ];
 
@@ -144,30 +144,29 @@ const IIS = {
 	}
 	// 反向代理
 	,proxy(req, res, target) {
-		var body = Buffer.alloc(0);
-		req.on("data", chunk => { body = Buffer.concat([body, chunk]); });
-		req.on("end", () => {
-			req.headers.host = target.host;
-			var forward = req.headers["x-forwarded-for"] || "";
-			if(forward) forward += ", ";
-			req.headers["x-forwarded-for"] = forward + req.connection.remoteAddress.replace(/^::ffff:/, "");
-			var options = {
-				hostname: target.host,
-				port: target.port || 80,
-				path: req.url,
-				method: req.method,
-				headers: req.headers
-			};
-			var proxy = http.request(options);
-			proxy.on("response", pxy => {
-				res.writeHead(pxy.statusCode, pxy.headers);
-				pxy.on("data", chunk => res.write(chunk));
-				pxy.on("end", () => res.end());
-			});
-			proxy.on("error", err => {
-				res.writeHead(502, { "Content-Type": "text/plain" });
-				res.end(err.message);
-			}).end(body);
+		if(target?.hostname) req.headers.host = target.hostname;	// 重写 Host 头
+		req.headers['x-real-ip'] = req.connection.remoteAddress.replace(/^::ffff:/, "");
+		var forward = req.headers["x-forwarded-for"] || "";
+		if(forward) forward += ", ";
+		req.headers["x-forwarded-for"] = forward + req.headers['x-real-ip'];
+		var options = {
+			hostname: target?.host || "127.34.56.78",
+			port: target?.port || 80,
+			path: req.url,
+			method: req.method,
+			headers: req.headers
+		};
+		var proxy = (target?.protocol == "https" ? https: http).request(options);
+		req.on("data", chunk => proxy.write(chunk));
+		req.on("end", () => proxy.end() );
+		proxy.on("response", pxy => {
+			res.writeHead(pxy.statusCode, pxy.headers);
+			pxy.on("data", chunk => res.write(chunk));
+			pxy.on("end", () => res.end());
+		});
+		proxy.on("error", err => {
+			res.writeHead(502, { "Content-Type": "text/plain" });
+			res.end(err.message);
 		});
 	}
 };
