@@ -5,6 +5,9 @@ const sites = [
 	{ domain: "127.34.56.77", root: "wwwroot/bbs-async" },	// 异步版 BBS（http://127.34.56.77:3000）
 	{ domain: "127.34.56.78", root: "wwwroot/127.34.56.78" }	// 测试站点（http://127.34.56.78:3000）
 ];
+const proxy = {
+	// "127.0.0.1": { host: "bbs.fengyun.org", port: 80 }
+};
 const indexPages = [ "index.html", "default.asp" ];
 
 const cache = new Object;
@@ -19,6 +22,7 @@ process.chdir(__dirname);
 const app = (req, res) => {
 	const { pathname, query } = url.parse(req.url, true);
 	const hostname = req.headers.host?.replace(/\:\d+$/, "") || "default";
+	if(hostname in proxy) return IIS.proxy(req, res, proxy[hostname]);	// 反向代理处理
 	var host = sites.find(s => s.domain == hostname) || sites[0];	// 默认为第一个站点
 	var site = { host, out: new Array, req, res, query };
 	var paths = pathname.split(/\.asp(?=\/)/);
@@ -27,6 +31,7 @@ const app = (req, res) => {
 		...process.env,
 		"REMOTE_ADDR": req.connection.remoteAddress.replace(/^\:\:ffff\:/, ""),
 		"REQUEST_METHOD": req.method,
+		"REQUEST_URI": req.url,
 		"PATH_INFO": paths.slice(1).join(".asp"),
 		"URL": paths[1] ? paths[0] + ".asp" : paths[0]
 	};
@@ -136,6 +141,34 @@ const IIS = {
 	,redir(site, url) {
 		site.res.writeHead(302, { "Location": url });
 		site.res.end();
+	}
+	// 反向代理
+	,proxy(req, res, target) {
+		var body = Buffer.alloc(0);
+		req.on("data", chunk => { body = Buffer.concat([body, chunk]); });
+		req.on("end", () => {
+			req.headers.host = target.host;
+			var forward = req.headers["x-forwarded-for"] || "";
+			if(forward) forward += ", ";
+			req.headers["x-forwarded-for"] = forward + req.connection.remoteAddress.replace(/^::ffff:/, "");
+			var options = {
+				hostname: target.host,
+				port: target.port || 80,
+				path: req.url,
+				method: req.method,
+				headers: req.headers
+			};
+			var proxy = http.request(options);
+			proxy.on("response", pxy => {
+				res.writeHead(pxy.statusCode, pxy.headers);
+				pxy.on("data", chunk => res.write(chunk));
+				pxy.on("end", () => res.end());
+			});
+			proxy.on("error", err => {
+				res.writeHead(502, { "Content-Type": "text/plain" });
+				res.end(err.message);
+			}).end(body);
+		});
 	}
 };
 
