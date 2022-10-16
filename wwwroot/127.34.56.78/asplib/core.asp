@@ -5,7 +5,7 @@ function ss(ns) {
 	if(!ns) ns = "global.";
 	var root = InitSession(site).data;
 	root[ns + "root"] ??= { sessId: root.sessId };
-	return root;
+	return root[ns + "root"];
 }
 
 function cc(k, f, t) {

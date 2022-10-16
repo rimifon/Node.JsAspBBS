@@ -1,7 +1,9 @@
 *.db
 yarn.lock
 package.json
+package-lock.json
 node_modules
 uploads
 .vscode
 ver
+cloudApi
