@@ -5,8 +5,13 @@ const sites = [
 	{ domain: "127.34.56.77", root: "wwwroot/bbs-async" },	// 异步版 BBS（http://127.34.56.77:3000）
 	{ domain: "127.34.56.78", root: "wwwroot/127.34.56.78" }	// 测试站点（http://127.34.56.78:3000）
 ];
+const rewrite = {
+	"default": [
+		[ /^\/bbs\/(?!res|upload|weibo|default)/i, "/default.asp/" ]
+	]
+};
 const proxy = {
-	// "localhost": { host: "fengyun.org", hostname: "bbs.fengyun.org", port: 80, protocol : "http" }
+	"localhost": { host: "fengyun.org", hostname: "bbs.fengyun.org", port: 80, protocol : "http" }
 };
 const indexPages = [ "index.html", "default.asp" ];
 
@@ -23,9 +28,9 @@ const app = (req, res) => {
 	const { pathname, query } = url.parse(req.url, true);
 	const hostname = req.headers.host?.replace(/\:\d+$/, "") || "default";
 	if(hostname in proxy) return IIS.proxy(req, res, proxy[hostname]);	// 反向代理处理
-	var host = sites.find(s => s.domain == hostname) || sites[0];	// 默认为第一个站点
-	var site = { host, out: new Array, req, res, query };
-	var paths = pathname.split(/\.asp(?=\/)/);
+	const host = sites.find(s => s.domain == hostname) || sites[0];	// 默认为第一个站点
+	const site = { host, out: new Array, req, res, query };
+	var paths = IIS.rewrite(host, pathname).split(/\.asp(?=\/)/);
 	// 服务端环境变量定义
 	site.env = {
 		...process.env,
@@ -168,6 +173,13 @@ const IIS = {
 			res.writeHead(502, { "Content-Type": "text/plain" });
 			res.end(err.message);
 		});
+	}
+	// 重写模块
+	,rewrite(host, path) {
+		var domain = host.domain;
+		if(!rewrite[domain]) return path;
+		rewrite[domain].forEach(x => { path = path.replace(x[0], x[1]); });
+		return path;
 	}
 };
 
