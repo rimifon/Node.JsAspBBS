@@ -594,7 +594,7 @@ function fmtMsg(str) {
 		replace(/\*\*(.+)\*\*/g, "<b>$1</b>").replace(/\*(.+)\*/g, "<i>$1</i>").
 		replace(/\[color=([\#\w]+)\](.+?)\[\/color\]/g, '<font color="$1">$2</font>').
 		replace(/\[bgcolor=([\#\w]+)\](.+?)\[\/bgcolor\]/g, '<font style="background-color: $1">$2</font>').
-		replace(/\`\`\`([\s\S]+)\`\`\`/g, "<blockquote>$1</blockquote>").
+		replace(/\`\`\`([\s\S]+?)\`\`\`/g, "<blockquote>$1</blockquote>").
 		replace(/\[(image|upload)=([^\]]+)\]/g, function(src, $1, $2) {
 			var file = $2.split("|");
 			return $1 == "image" ? '<div><a href="' + file[0] + '" target="_blank"><img src="' + file[0] + '" alt="' + html(file[1]) + '" /></a></div>'
