@@ -587,7 +587,14 @@ function fmtMsg(str) {
 		return "[html=\x01]";
 	});
 	str = str.replace(/\t/g, "    ").replace(/  /g, "&nbsp; ").replace(/\r?\n/g, "<br />\r\n").
-		replace(/\[(.+?)\]\(http(.+?)\)/g, '<a href="http$2" target="_blank">$1</a>').
+		replace(/\[(.+?)\]\((\w+)\:(.+?)\)/g, '<a href="$1:$3" target="_blank">$1</a>').
+		replace(/\[(b|i|u)\](.+?)\[\/\1\]/g, "<$1>$2</$1>").
+		replace(/\[(b|i|u)\](.+?)\[\/\1\]/g, "<$1>$2</$1>").
+		replace(/\[(b|i|u)\](.+?)\[\/\1\]/g, "<$1>$2</$1>").
+		replace(/\*\*(.+)\*\*/g, "<b>$1</b>").replace(/\*(.+)\*/g, "<i>$1</i>").
+		replace(/\[color=([\#\w]+)\](.+?)\[\/color\]/g, '<font color="$1">$2</font>').
+		replace(/\[bgcolor=([\#\w]+)\](.+?)\[\/bgcolor\]/g, '<font style="background-color: $1">$2</font>').
+		replace(/\`\`\`([\s\S]+)\`\`\`/g, "<blockquote>$1</blockquote>").
 		replace(/\[(image|upload)=([^\]]+)\]/g, function(src, $1, $2) {
 			var file = $2.split("|");
 			return $1 == "image" ? '<div><a href="' + file[0] + '" target="_blank"><img src="' + file[0] + '" alt="' + html(file[1]) + '" /></a></div>'
