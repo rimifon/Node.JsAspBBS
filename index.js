@@ -247,10 +247,14 @@ function parseMultipart(site) {
 function parseUrlEncoded(site) {
 	var form = new Object;
 	var body = site.body.split("&");
+	var utf = str => {
+		try { return decodeURIComponent(str?.replace(/\+/g, "%20")); }
+		catch(err) { return str; }
+	};
 	body.forEach(item => {
 		if(!item) return;
 		var [ key, value ] = item.split("=");
-		form[decodeURIComponent(key)] = decodeURIComponent(value);
+		form[utf(key)] = utf(value);
 	});
 	return form;
 }
