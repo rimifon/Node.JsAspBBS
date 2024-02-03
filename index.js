@@ -38,7 +38,7 @@ const app = (req, res) => {
 		"REQUEST_METHOD": req.method,
 		"REQUEST_URI": req.url,
 		"PATH_INFO": paths.slice(1).join(".asp"),
-		"URL": paths[1] ? paths[0] + ".asp" : paths[0]
+		"URL": decodeURIComponent(paths[1] ? paths[0] + ".asp" : paths[0])
 	};
 	for(var x in req.headers) site.env["HTTP_" + x.toUpperCase().replace(/\-/g, "_")] = req.headers[x];
 	if(req.connection.encrypted) site.env["HTTPS"] = "on";
@@ -120,15 +120,30 @@ const IIS = {
 		// 判断是否 ASP
 		if(/\.asp$/i.test(site.env.URL)) return this.asp(site);
 		var file = path.join(site.host.root, site.env.URL);
-		var stat = fs.statSync(file);
-		var headers = {
-			"Content-Type": getMime(path.extname(file)),
-			"Content-Length": stat.size,
-			"Last-Modified": stat.mtime.toUTCString(),
-			"Cache-Control": "max-age=2592000"
+		stat = fs.statSync(file);
+		var headers = { "Content-Type": getMime(path.extname(file)) };
+		var output = (code, arg) => {
+			headers["Last-Modified"] = stat.mtime.toUTCString();
+			site.res.writeHead(code, headers);
+			if(site.req.method == "HEAD") return site.res.end();
+			fs.createReadStream(file, arg || {}).pipe(site.res)
 		};
-		site.res.writeHead(200, headers);
-		fs.createReadStream(file).pipe(site.res);
+		var rangeHeader = site.req.headers.range;
+		// 没有 Range 头时
+		if(!rangeHeader) {
+			headers["Content-Length"] = stat.size;
+			headers["Cache-Control"] = "max-age=2592000";
+			return output(200);
+		}
+		// 存在 Range 头时
+		var [ start, end ] = rangeHeader.match(/(\d+)/g) || [];
+		if(!start) start = 0;
+		if(!end) end = stat.size - 1;
+		var contentLength = end - start + 1;
+		headers["Content-Range"] = `bytes ${start}-${end}/${stat.size}`;
+		headers["Accept-Ranges"] = "bytes";
+		headers["Content-Length"] = contentLength;
+		output(206, { start: start - 0, end: end - 0 });
 	}
 	// ASP 请求处理
 	,asp(site) {
