@@ -147,6 +147,43 @@ async function boot(route) {
 			return master(function() { %><!-- #include file="views/topic.html" --><% });
 		}
 
+		// 搜索帖子
+		,search: async function() {
+			sys.searchKey = route[1];
+			var par = { key: "%" + route[1] + "%" };
+			sys.online.setWeiZhi("forum/search", "搜索帖子：" + route[1], ss().sessId);
+			var online = sys.online.data("forum/search");
+			online.users.guest = online.rows.length - online.users.reg;
+			online.rows.sort(function(a, b) { return b.eTime - a.eTime; });
+			var onlineInfo = function(x) {
+				return [
+					"当前位置：" + x.weizhi,
+					"来访时间：" + new Date(x.sTime),
+					"活动时间：" + new Date(x.eTime),
+					"操作系统：" + x.xitong,
+					"ＩＰ地址：" + ( me().roleid > 5 ? x.ip : "已设置保密"),
+					"点击次数：" + x.hits
+				].join("\r\n");
+			};
+			sys.title = "搜索帖子 - " + sys.searchKey;
+			var showPage = function(x) {
+				// 每页显示 12 条回复
+				if(x.replynum < 12) return "";
+				var arr = new Array;
+				var page = Math.ceil((x.replynum + 1) / 12);
+				for(var i = 1; i <= page; i++) arr.push(i.toString().link("?r=topic/" + x.topicid + "/" + i));
+				if(page > 7) arr.splice(3, page - 6, "……");
+				return " [第 " + arr.join(" ") + " 页]";
+			};
+			var inReply = db().table("reply z").where("z.topicid=a.topicid and z.message like @key").select("1").limit(0, 1);
+			var rows = sys.searchKey ? await db().table("topic a").where("title like @key or exists(" + inReply + ")").
+				limit(0, 30).select("a.topicid").astable("a").join("topic b on b.topicid=a.topicid").
+				join("users c on c.userid=b.userid").join("users d on d.userid=b.replyid").
+				join("forums e on e.forumid=b.forumid").select("b.*, c.nick, d.nick as reply, e.nick forumname").
+				orderby("b.ding desc, coalesce(replytime, posttime) desc").query(par) : new Array;
+			return master(function() { %><!-- #include file="views/search.html" --><% });
+		}
+
 		// 论坛 API 接口定义
 		,api: {
 			Memo: [ "* JsASP 论坛 API 接口", "* 发帖 +5 积分，评论 +2 积分，登录 +1 积分" ]
@@ -586,7 +623,13 @@ function fmtMsg(str) {
 		return "[html=\x01]";
 	});
 	str = str.replace(/\t/g, "    ").replace(/  /g, "&nbsp; ").replace(/\r?\n/g, "<br />\r\n").
-		replace(/\[(.+?)\]\(http(.+?)\)/g, '<a href="http$2" target="_blank">$1</a>').
+		replace(/\[(.+?)\]\((\w+)\:(.+?)\)/g, '<a href="$2:$3" target="_blank">$1</a>').
+		replace(/\[(b|i|u)\](.+?)\[\/\1\]/g, "<$1>$2</$1>").
+		replace(/\[(b|i|u)\](.+?)\[\/\1\]/g, "<$1>$2</$1>").
+		replace(/\[(b|i|u)\](.+?)\[\/\1\]/g, "<$1>$2</$1>").
+		replace(/\[color=([\#\w]+)\](.+?)\[\/color\]/g, '<font color="$1">$2</font>').
+		replace(/\[bgcolor=([\#\w]+)\](.+?)\[\/bgcolor\]/g, '<font style="background-color: $1">$2</font>').
+		replace(/\`\`\`([\s\S]+?)\`\`\`/g, "<blockquote>$1</blockquote>").
 		replace(/\[(image|upload)=([^\]]+)\]/g, function(src, $1, $2) {
 			var file = $2.split("|");
 			return $1 == "image" ? '<div><a href="' + file[0] + '" target="_blank"><img src="' + file[0] + '" alt="' + html(file[1]) + '" /></a></div>'

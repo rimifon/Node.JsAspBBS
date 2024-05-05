@@ -1,0 +1,79 @@
+<style type="text/css">
+@media screen and (min-width: 721px) {
+.pos{ padding: 1mm 3mm; background-color: var(--bg) }
+.col{ border-left: var(--bd); box-sizing: border-box }
+.cap .col{ padding: 2mm 0mm }
+.main .col{ padding: 2mm }
+.main .col .bold{ font-weight: bold; color: #900 }
+.list .main:hover{ background-color: var(--bg) }
+.admin{ display: none }
+.admin a{ cursor: pointer; color: #777 }
+.list .main:hover .admin{ display: block }
+.c1{ width: 1cm; border-left: none }
+.c2{ width: 1in }
+.c3{ width: 1in }
+.c4{ width: 7cm }
+.nonew{ background: var(--bg) url(res/bbs/icon/topicnonew.gif) no-repeat center }
+.ding{ background: var(--bg) url(res/bbs/icon/abstop.gif) no-repeat center }
+a.blue{ color: blue }
+a.blue:before{ content: '[精]'; color: red; font-weight: bold }
+.pager b{ color: #900 }
+.online .list{ flex-wrap: wrap }
+.online .list .li{ width: 4cm }
+.online .icon{ padding: 2mm 3mm; background-color: var(--bg) }
+.online .pad{ border-left: var(--bd); padding: 2mm 4mm }
+}
+@media screen and (max-width: 720px) {
+.online .cap{ font-size: 3.5vw }
+.online .list{ padding: 1vw 2vw; border-top: var(--bd); flex-wrap: wrap; font-size: 3.5vw }
+.online .list .li{ width: 23.1vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+.online .list img{ height: 3vw }
+.topic .cap{ line-height: 8vw }
+.topic .admin{ float: none; text-align: right; font: 3vw/4vw arial; transform: translateY(6vw); margin-bottom: -4vw }
+.topic .main{ display: block; border-top: var(--bd); padding: 1vw 2vw }
+.topic .main .auto a.title{ display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+.topic .main .c4{ text-align: left; color: #777; font: 3vw/4vw times }
+.topic .main a.bold{ color: #900 }
+.topic .main a.blue{ color: blue }
+} 
+</style>
+<div class="pos mt bd">
+	<a href="."><%= sys.name %></a> → 搜索帖子内容
+</div>
+<!-- 论坛在线统计 -->
+<div class="online bd mt">
+	<div class="cap">
+		目前论坛总共有 <%= online.users.all %> 人，其中有 <%= online.rows.length %> 人在搜索。
+		<span class="for-web">其中注册用户 <%= online.users.reg %> 人，访客 <%= online.users.guest %> 人。</span>
+	</div>
+	<div class="main flex">
+		<div class="icon flex ac for-web"><div><img src="<%= sys.res %>icon/online.gif" /></div></div>
+		<div class="box auto pad">
+			<div class="list flex"><% online.rows.forEach(function(x) { %>
+				<div class="li" title="<%= onlineInfo(x) %>">
+					<img src="<%= sys.res %>online/<%= x.roleid %>.gif" /><%= x.sessId == ss().sessId ? x.nick.fontcolor("blue") : x.nick %>
+				</div><% }); %>
+			</div>
+		</div>
+	</div>
+</div>
+<div class="topic bd mt list">
+	<div class="tc flex cap" style="padding: 0mm">
+		<div class="col c1 for-web">状态</div>
+		<div class="col c2 for-web">版块</div>
+		<div class="col auto">主　题</div>
+		<div class="col c2 for-web">作者</div>
+		<div class="col c3 for-web">回复/点击</div>
+		<div class="col c4 for-web">最后更新 | 回复人</div>
+	</div><% rows.forEach(function(x) { %>
+	<div class="main flex">
+		<div class="col c1 <%= x.ding ? 'ding' : 'nonew' %>"></div>
+		<div class="col c2 tc for-web"><a href="?r=forum/<%= x.forumid %>"><%= x.forumname %></a></div>
+		<div class="col auto">
+			<a href="?r=topic/<%= x.topicid %>" class="title <%= x.ding ? 'bold' : x.jing ? 'blue' : 'nml' %>"><%= x.title %></a><%= showPage(x) %>
+		</div>
+		<div class="col c2 tc for-web"><%= x.nick %></div>
+		<div class="col c3 tc for-web"><%= x.replynum %>/<%= x.pv %></div>
+		<div class="col c4 tc ellipsis"><%= x.replytime == null ? "-" : tojson(x.replytime).slice(1, -4) %> | <%= x.reply || "-" %></div>
+	</div><% }); %>
+</div>

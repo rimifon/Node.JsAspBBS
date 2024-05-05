@@ -24,6 +24,9 @@ body{ margin: 0mm 7mm; font: 4mm/6mm simsun,arial }
 .bd .main{ border-top: var(--bd) }
 .pos{ padding: 1mm 3mm; background-color: var(--bg) }
 .footer, .footer a{ color: #777 }
+.search{ border: 1px solid #ccc; border-radius: 1mm; display: inline-block } 
+.search:before{ content: '🔎'; float: left }
+.search input{ outline: none; border: none; background-color: transparent }
 }
 @media screen and (max-width: 720px) {
 .for-web{ display: none }
@@ -45,6 +48,7 @@ body{ font: 4vw/6vw arial; margin: 0mm; background: #fff }
 		<a href="?r=login">登录</a> | <a href="?r=register">注册</a><% } else { %>
 		<a href="?r=logout">退出登录</a><% } %>
 		<span class="for-wap"> | <a href="weibo/">微博</a></span>
+		<span class="for-web"> | <span class="search"><input placeholder="搜索" onkeydown="searchKey(event)" value="" /></span></span>
 	</div>
 </div>
 <% func(); %>
@@ -55,6 +59,12 @@ body{ font: 4vw/6vw arial; margin: 0mm; background: #fff }
 	执行 <%= new Date - sys.sTime %> ms</a>
 </div>
 <script type="text/javascript">
+function searchKey(e) {
+	if(e.keyCode != 13) return;
+	var val = encodeURIComponent(e.target.value);
+	if(!val) return alert("请输入关键字");
+	location.assign("?r=search/" + val);
+}
 function post(url, form, func) {
 	fetch(url, {
 		headers: { "Content-Type": "application/x-www-form-urlencoded" },
